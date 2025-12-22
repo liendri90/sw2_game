@@ -21,10 +21,6 @@ public class GamePanel extends JPanel {
 
     private volatile GameState state;
 
-    // Синхронизация отсчёта с сервером
-    private long localGameStartTime = -1;  // Время начала игры на локальном клиенте
-    private int initialCountdown = -1;     // Начальное значение отсчёта
-
     private static final int TILE_W = 64;
     private static final int TILE_H = 64;
 
@@ -66,49 +62,10 @@ public class GamePanel extends JPanel {
         });
     }
 
-    /**
-     * Обновить состояние игры с синхронизацией времени отсчёта
-     */
+    /** Обновить состояние игры и перерисовать панель. */
     public void updateState(GameState newState) {
         this.state = newState;
-
-        // ИСПРАВЛЕНИЕ: Синхронизируем время начала игры только один раз
-        if (localGameStartTime == -1 && newState.getGameStartTime() > 0) {
-            localGameStartTime = newState.getGameStartTime();
-            initialCountdown = newState.getCountdown();
-            System.out.println("[GamePanel] Game started at: " + localGameStartTime +
-                    ", initial countdown: " + initialCountdown);
-        }
-
-        // Логирование для отладки (можно удалить позже)
-        int displayCountdown = calculateCountdown(newState);
-        System.out.println("[GamePanel] Server countdown: " + newState.getCountdown() +
-                ", calculated countdown: " + displayCountdown);
-
         repaint();
-    }
-
-    /**
-     * Рассчитать текущий отсчёт на основе серверного времени
-     * @param s текущее состояние игры
-     * @return значение отсчёта, синхронизированное с сервером
-     */
-    private int calculateCountdown(GameState s) {
-        // Если отсчёт ещё не начался на сервере
-        if (localGameStartTime == -1 || s.getGameStartTime() <= 0) {
-            return s.getCountdown();
-        }
-
-        // Получаем текущее серверное время на основе времени начала
-        long elapsed = System.currentTimeMillis() - localGameStartTime;
-        int remainingCountdown = initialCountdown - (int)(elapsed / 1000);
-
-        // Если время истекло, возвращаем 0
-        if (remainingCountdown <= 0) {
-            return 0;
-        }
-
-        return remainingCountdown;
     }
 
     public void startGameIfNeeded() {
@@ -131,10 +88,10 @@ public class GamePanel extends JPanel {
         int w = getWidth();
         int h = getHeight();
 
-        // Очищаем фон
+        // фон
         drawBackground(g2, w, h);
 
-        // Получаем позиции игроков для определения камеры
+        // камера по среднему X живых игроков
         GameState.PlayerState[] players = s.getPlayers();
         double avgX = 0;
         int aliveCount = 0;
@@ -150,28 +107,27 @@ public class GamePanel extends JPanel {
             avgX /= aliveCount;
         }
 
-        // Смещаем камеру за игроками
-        int cameraX = (int)avgX - w / 3;
+        int cameraX = (int) avgX - w / 3;
         if (cameraX < 0) cameraX = 0;
         if (cameraX > s.getWorldWidth() - w) cameraX = s.getWorldWidth() - w;
 
-        // Рисуем мир
+        // мир
         drawBorderTiles(g2, s.getWorldWidth(), h);
         drawSpikesAndFinish(g2, s);
 
-        // Рисуем игроков
+        // игроки
         for (int i = 0; i < players.length; i++) {
             GameState.PlayerState p = players[i];
             if (p == null || !p.isAlive()) continue;
             drawSnowman(g2, p, i);
         }
 
-        // ИСПРАВЛЕНИЕ: Рисуем отсчёт с синхронизацией
-        int displayCountdown = calculateCountdown(s);
-        if (displayCountdown > 0) {
+        // отсчёт, который даёт сервер в поле countdown
+        int cd = s.getCountdown();
+        if (cd > 0) {
             g2.setFont(getFont().deriveFont(Font.BOLD, 72f));
             g2.setColor(Color.WHITE);
-            String text = String.valueOf(displayCountdown);
+            String text = String.valueOf(cd);
             FontMetrics fm = g2.getFontMetrics();
             int x = (w - fm.stringWidth(text)) / 2;
             int y = (h + fm.getAscent()) / 2;
@@ -280,17 +236,15 @@ public class GamePanel extends JPanel {
         g2.fillOval(leftEyeX, eyeY, eyeSize, eyeSize);
         g2.fillOval(rightEyeX, eyeY, eyeSize, eyeSize);
 
-        // 4. Нос (простой оранжевый овал)
+        // 4. Нос
         g2.setColor(new Color(255, 140, 0));
         int noseX = headX + headSize / 2 - 2;
         int noseY = eyeY + 4;
         g2.fillOval(noseX, noseY, 4, 3);
 
-        // 5. Шляпа (простая)
+        // 5. Шляпа
         g2.setColor(hatColor);
-        // Поля
-        g2.fillRect(headX - 3, headY - 5, headSize + 6, 5);
-        // Верх
-        g2.fillRect(headX + 3, headY - 15, headSize - 6, 10);
+        g2.fillRect(headX - 3, headY - 5, headSize + 6, 5);          // поля
+        g2.fillRect(headX + 3, headY - 15, headSize - 6, 10);        // верх
     }
 }
