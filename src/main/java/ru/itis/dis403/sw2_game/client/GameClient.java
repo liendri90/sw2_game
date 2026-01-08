@@ -56,22 +56,30 @@ public class GameClient {
             while (!socket.isClosed()) {
                 Object obj = in.readObject();
                 System.out.println("client got: " + obj.getClass().getSimpleName());
+
+                // 1) Если пришёл GameState – обновляем игровую панель
+                if (obj instanceof GameState gs) {
+                    handleGameState(gs);
+                    continue;
+                }
+
+                // 2) Остальное – это сообщения протокола
                 if (!(obj instanceof Message msg)) {
+                    // неизвестный тип – просто игнорируем
                     continue;
                 }
 
                 switch (msg.getType()) {
-                    case STATE -> handleGameState((GameState) msg);
                     case GAME_OVER -> handleGameOver((GameOverMessage) msg);
                     case MATCHES_LIST -> handleMatchesList((MatchesListMessage) msg);
                     case PLAYER_INDEX -> handlePlayerIndex((PlayerIndexMessage) msg);
+                    // Если когда‑нибудь введёшь Message с типом STATE – обработаешь тут
                     default -> {
-                        // остальные типы игнорируем или логируем
+                        // логируем/игнорируем
                     }
                 }
             }
         } catch (IOException | ClassNotFoundException e) {
-            // соединение оборвалось
             e.printStackTrace();
         }
     }
@@ -82,7 +90,8 @@ public class GameClient {
 
     private void handleGameState(GameState state) {
         SwingUtilities.invokeLater(() ->
-                mainFrame.getGamePanel().updateState(state));
+                mainFrame.getGamePanel().updateState(state)
+        );
     }
 
     private void handleGameOver(GameOverMessage msg) {

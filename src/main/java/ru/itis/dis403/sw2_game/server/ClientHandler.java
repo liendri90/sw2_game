@@ -3,20 +3,18 @@ package ru.itis.dis403.sw2_game.server;
 import ru.itis.dis403.sw2_game.common.model.GameState;
 import ru.itis.dis403.sw2_game.common.message.*;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 
 /**
  * Один клиент на сервере: читает сообщения и передаёт их GameServer.
- * ИСПРАВЛЕНИЕ: добавлен метод sendGameState() для синхронизации отсчёта
  */
 public class ClientHandler implements Runnable {
 
     private final GameServer server;
     private final Socket socket;
-    private int playerIndex;
+    private final int playerIndex;
+
     private ObjectOutputStream out;
     private ObjectInputStream in;
 
@@ -28,17 +26,15 @@ public class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-        try (socket) {
-            out = new ObjectOutputStream(socket.getOutputStream());
-            in = new ObjectInputStream(socket.getInputStream());
+        try (Socket s = socket) {
+            out = new ObjectOutputStream(s.getOutputStream());
+            out.flush();
+            in = new ObjectInputStream(s.getInputStream());
 
-            // Сразу сообщаем клиенту его индекс
             send(new PlayerIndexMessage(playerIndex));
+            sendState(server.getState());
 
-            // Отправляем начальное состояние
-            sendGameState(server.state);
-
-            while (!socket.isClosed()) {
+            while (!s.isClosed()) {
                 Object obj = in.readObject();
 
                 if (!(obj instanceof Message msg)) {
@@ -63,20 +59,10 @@ public class ClientHandler implements Runnable {
     private void handleJoin(JoinMessage join) {
         GameState.PlayerState p = server.getPlayerState(playerIndex);
         if (p != null) {
-            // Имя только по индексу
             p.setName("Игрок " + (playerIndex + 1));
-            // Цвет шляпы по индексу: 0 – красный, 1 – синий
-            if (playerIndex == 0) {
-                p.setHatColor("RED");
-            } else {
-                p.setHatColor("BLUE");
-            }
         }
     }
 
-    /**
-     * Отправить сообщение клиенту
-     */
     public synchronized void send(Message msg) {
         try {
             if (out != null) {
@@ -88,18 +74,13 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * ИСПРАВЛЕНИЕ: отправить состояние игры клиенту
-     * Используется для синхронизации GameState с информацией о gameStartTime
-     */
-    public synchronized void sendGameState(GameState state) {
+    public synchronized void sendState(GameState state) {
         try {
             if (out != null) {
                 out.writeObject(state);
                 out.flush();
             }
         } catch (IOException e) {
-            System.err.println("Failed to send GameState: " + e.getMessage());
             e.printStackTrace();
         }
     }

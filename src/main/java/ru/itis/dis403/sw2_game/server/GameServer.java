@@ -1,7 +1,8 @@
 package ru.itis.dis403.sw2_game.server;
 
 import ru.itis.dis403.sw2_game.common.message.*;
-import ru.itis.dis403.sw2_game.common.model.*;
+import ru.itis.dis403.sw2_game.common.model.GameState;
+import ru.itis.dis403.sw2_game.common.model.MatchResult;
 import ru.itis.dis403.sw2_game.server.db.MatchDao;
 
 import java.awt.*;
@@ -12,10 +13,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Сервер: два игрока бегут вперёд, управление только сменой гравитации.
- * ИСПРАВЛЕНИЕ: добавлена синхронизация gameStartTime для отсчёта
- */
 public class GameServer {
 
     private final int port;
@@ -47,10 +44,13 @@ public class GameServer {
     public GameServer(int port, MatchDao matchDao) {
         this.port = port;
         this.matchDao = matchDao;
-        initLevel();
+        initLevelNotStarted();
     }
 
-    private void initLevel() {
+    private void initLevelNotStarted() {
+        state.getPlatforms().clear();
+        state.getSpikes().clear();
+
         state.addPlatform(new Rectangle(0, FLOOR_Y, WORLD_WIDTH, TILE_SIZE));
         state.addPlatform(new Rectangle(0, 0, WORLD_WIDTH, CEIL_Y));
 
@@ -62,19 +62,45 @@ public class GameServer {
 
         state.setFinish(new Rectangle(2000, FLOOR_Y - 160, 60, 160));
 
-        GameState.PlayerState p0 = state.getPlayers();
+        GameState.PlayerState[] players = state.getPlayers();
+
+        GameState.PlayerState p0 = players[0];
+        p0.setAlive(true);
         p0.setX(120);
         p0.setY(FLOOR_Y - PLAYER_HEIGHT);
         p0.setGravityDown(true);
+        p0.setVy(0);
 
-        GameState.PlayerState p1 = state.getPlayers();
+        GameState.PlayerState p1 = players[1];
+        p1.setAlive(true);
         p1.setX(200);
         p1.setY(FLOOR_Y - PLAYER_HEIGHT);
         p1.setGravityDown(true);
+        p1.setVy(0);
 
+        state.setCountdown(0);
+        state.setRunning(false);
+        state.setWinnerIndex(-1);
+        state.setWinType("");
+        state.setElapsedSeconds(0);
+        state.setWorldWidth(WORLD_WIDTH);
+        state.setWorldHeight(WORLD_HEIGHT);
+        state.setGameStartTime(-1);
+    }
+
+    private void startRoundCountdown() {
+        initLevelNotStarted();
+
+        long now = System.currentTimeMillis();
+        countdownStartMillis = now;
+        startTimeMillis = now;
+
+        state.setGameStartTime(now);
         state.setCountdown(COUNTDOWN_SECONDS);
         state.setRunning(false);
-        state.setWorldWidth(WORLD_WIDTH);
+        state.setWinnerIndex(-1);
+
+        broadcastState(state);
     }
 
     public GameState.PlayerState getPlayerState(int index) {
@@ -82,11 +108,15 @@ public class GameServer {
         return state.getPlayers()[index];
     }
 
+    public GameState getState() {
+        return state;
+    }
+
     public void start() throws IOException {
         serverSocket = new ServerSocket(port);
         System.out.println("Server started on port " + port);
 
-        while (clients.size() < 2) {
+        while (clients.size() < GameState.PLAYERS_COUNT) {
             Socket s = serverSocket.accept();
             int index = clients.size();
             ClientHandler handler = new ClientHandler(this, s, index);
@@ -95,7 +125,6 @@ public class GameServer {
             System.out.println("Client connected: index=" + index);
         }
 
-        // цикл игры запускаем, но он ждёт готовности обоих игроков
         running = true;
         gameLoop();
     }
@@ -105,14 +134,14 @@ public class GameServer {
         final double dt = 1.0 / fps;
 
         long lastNano = System.nanoTime();
-        startTimeMillis = System.currentTimeMillis();
 
         while (running) {
             long now = System.nanoTime();
             double delta = (now - lastNano) / 1e9;
+
             if (delta >= dt) {
                 update(delta);
-                broadcast(state);
+                broadcastState(state);
                 lastNano = now;
             } else {
                 try {
@@ -126,8 +155,11 @@ public class GameServer {
     private void update(double dt) {
         long now = System.currentTimeMillis();
 
-        if (!ready || !ready) {
-            System.out.println("update: not all ready, ready=" + ready + ", ready=" + ready);
+        if (!ready[0] || !ready[1]) {
+            return;
+        }
+
+        if (!state.isGameStarted()) {
             return;
         }
 
@@ -136,12 +168,11 @@ public class GameServer {
 
         if (left > 0) {
             state.setCountdown(left);
-            System.out.println("update: left=" + left + ", passed=" + passed);
-            return;              // ВАЖНО: сразу выходим, не двигаем игроков
-        } else {
-            state.setCountdown(0);
-            state.setRunning(true);
+            return;
         }
+
+        state.setCountdown(0);
+        state.setRunning(true);
 
         long elapsed = (now - startTimeMillis) / 1000;
         state.setElapsedSeconds(elapsed);
@@ -150,23 +181,18 @@ public class GameServer {
             return;
         }
 
-        // ДВИЖЕНИЕ ИГРОКОВ ТОЛЬКО ПОСЛЕ ОТСЧЁТА
         GameState.PlayerState[] players = state.getPlayers();
-        for (int i = 0; i < players.length; i++) {
-            GameState.PlayerState p = players[i];
+        for (GameState.PlayerState p : players) {
             if (p == null || !p.isAlive()) continue;
 
             p.setVx(RUN_SPEED);
             p.setX(p.getX() + p.getVx() * dt);
 
-            // Применяем гравитацию
             double accY = p.isGravityDown() ? GRAVITY : -GRAVITY;
             p.setVy(p.getVy() + accY * dt);
             double newY = p.getY() + p.getVy() * dt;
 
-            // Ограничиваем сверху и снизу
             if (p.isGravityDown()) {
-                // Гравитация вниз - пол внизу
                 if (newY > FLOOR_Y - PLAYER_HEIGHT) {
                     newY = FLOOR_Y - PLAYER_HEIGHT;
                     p.setVy(0);
@@ -176,7 +202,6 @@ public class GameServer {
                     p.setVy(0);
                 }
             } else {
-                // Гравитация вверх - пол сверху
                 if (newY < CEIL_Y) {
                     newY = CEIL_Y;
                     p.setVy(0);
@@ -189,14 +214,12 @@ public class GameServer {
 
             p.setY(newY);
 
-            // Проверка выхода за пределы мира
             if (p.getX() < -1000 || p.getX() > WORLD_WIDTH + 1000 ||
                     p.getY() < -1000 || p.getY() > WORLD_HEIGHT + 1000) {
                 p.setAlive(false);
             }
         }
 
-        // Проверка коллизий
         checkSpikesAndFinish();
     }
 
@@ -214,7 +237,6 @@ public class GameServer {
                     PLAYER_HEIGHT
             );
 
-            // Проверка шипов
             for (Rectangle s : state.getSpikes()) {
                 if (hitBox.intersects(s)) {
                     p.setAlive(false);
@@ -222,7 +244,6 @@ public class GameServer {
                 }
             }
 
-            // Проверка финиша
             Rectangle finish = state.getFinish();
             if (finish != null && hitBox.intersects(finish)) {
                 System.out.println("Player " + i + " reached finish");
@@ -231,7 +252,6 @@ public class GameServer {
             }
         }
 
-        // Проверка живых игроков
         int aliveCount = 0;
         int lastAliveIndex = -1;
         for (int i = 0; i < players.length; i++) {
@@ -242,26 +262,17 @@ public class GameServer {
         }
 
         if (aliveCount == 1) {
-            System.out.println("Only one player alive: " + lastAliveIndex);
             endGame(lastAliveIndex, "LAST_ALIVE");
         } else if (aliveCount == 0) {
-            System.out.println("No players alive");
             endGame(-1, "NO_ONE");
         }
     }
 
     private void endGame(int winnerIndex, String winType) {
-        // Устанавливаем победителя до остановки
         state.setWinnerIndex(winnerIndex);
         state.setWinType(winType);
-
-        // Останавливаем игру
         running = false;
 
-        // Получаем информацию о победителе
-        GameState.PlayerState winner = winnerIndex >= 0 ? state.getPlayers()[winnerIndex] : null;
-
-        // Имя и цвет не зависят от JoinMessage, только от индекса
         String name = null;
         String color = null;
         if (winnerIndex == 0) {
@@ -274,15 +285,8 @@ public class GameServer {
 
         int duration = (int) state.getElapsedSeconds();
         LocalDateTime dt = LocalDateTime.now();
-        System.out.println("Game ended: winner=" + name + ", index=" + winnerIndex + ", type=" + winType);
 
-        MatchResult result = new MatchResult(
-                name,
-                color,
-                dt,
-                duration,
-                winType
-        );
+        MatchResult result = new MatchResult(name, color, dt, duration, winType);
         try {
             matchDao.insertMatch(result);
         } catch (Exception e) {
@@ -290,32 +294,20 @@ public class GameServer {
         }
 
         GameOverMessage msg = new GameOverMessage(
-                winnerIndex,
-                name,
-                color,
-                duration,
-                winType,
-                dt
+                winnerIndex, name, color, duration, winType, dt
         );
         broadcast(msg);
     }
 
-    /**
-     * Отправить сообщение всем клиентам
-     */
     public synchronized void broadcast(Message msg) {
         for (ClientHandler ch : clients) {
             ch.send(msg);
         }
     }
 
-    /**
-     * ИСПРАВЛЕНИЕ: отправить GameState всем клиентам
-     * Поддерживает синхронизацию gameStartTime для отсчёта
-     */
-    public synchronized void broadcast(GameState gameState) {
+    public synchronized void broadcastState(GameState gameState) {
         for (ClientHandler ch : clients) {
-            ch.sendGameState(gameState);
+            ch.sendState(gameState);
         }
     }
 
@@ -344,27 +336,8 @@ public class GameServer {
         if (index < 0 || index >= ready.length) return;
         ready[index] = true;
         System.out.println("Player " + index + " READY");
-
-        // Когда оба готовы – запускаем отсчёт
-        if (ready && ready) {
-            // Сначала сбрасываем уровень
-            initLevel();
-
-            // ИСПРАВЛЕНИЕ: устанавливаем серверное время начала отсчёта
-            long gameStartTime = System.currentTimeMillis();
-            countdownStartMillis = gameStartTime;
-            startTimeMillis = gameStartTime;
-
-            // Отправляем это время в GameState
-            state.setGameStartTime(gameStartTime);
-            state.setCountdown(COUNTDOWN_SECONDS);
-            state.setWinnerIndex(-1);
-            state.setRunning(false);
-
-            System.out.println("Both players ready, countdown started at: " + gameStartTime);
-
-            // Уведомляем всех клиентов о готовности и времени начала
-            broadcast(state);
+        if (ready[0] && ready[1]) {
+            startRoundCountdown();
         }
     }
 
