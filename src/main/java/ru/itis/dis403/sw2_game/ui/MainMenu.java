@@ -12,6 +12,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.awt.event.*;
 
 public class MainMenu extends JFrame {
     private JButton hostButton;
@@ -50,7 +51,7 @@ public class MainMenu extends JFrame {
         bestTimesButton = new JButton("Лучшие времена");
         exitButton = new JButton("Выход");
 
-        // Стилизация кнопок
+
         styleButton(hostButton, new Color(70, 130, 180));
         styleButton(joinButton, new Color(60, 179, 113));
         styleButton(bestTimesButton, new Color(255, 165, 0));
@@ -61,7 +62,6 @@ public class MainMenu extends JFrame {
         buttonPanel.add(bestTimesButton);
         buttonPanel.add(exitButton);
 
-        // Добавление обработчиков событий
         hostButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -113,11 +113,11 @@ public class MainMenu extends JFrame {
         button.setBorder(BorderFactory.createRaisedBevelBorder());
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
+        button.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent evt) {
                 button.setBackground(color.darker());
             }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
+            public void mouseExited(MouseEvent evt) {
                 button.setBackground(color);
             }
         });
@@ -144,7 +144,6 @@ public class MainMenu extends JFrame {
             return;
         }
 
-        // Создаем финальные копии для использования в лямбда-выражении
         final String finalPlayerName = playerName.trim();
         final String finalRoomName = roomName.trim();
 

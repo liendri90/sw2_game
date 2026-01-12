@@ -1,7 +1,6 @@
 package ru.itis.dis403.sw2_game.db;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,10 +34,10 @@ public class DatabaseManager {
     private void createTables() {
         String sql = "CREATE TABLE IF NOT EXISTS room_stats (" +
                 "id SERIAL PRIMARY KEY," +
-                "room_name VARCHAR(100) NOT NULL UNIQUE," + // Название комнаты уникально
-                "total_time BIGINT NOT NULL," + // Общее время прохождения всех уровней
-                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," + // Дата прохождения
-                "levels_completed INT DEFAULT 0" + // Количество пройденных уровней
+                "room_name VARCHAR(100) NOT NULL UNIQUE," +
+                "total_time BIGINT NOT NULL," +
+                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+                "levels_completed INT DEFAULT 0" +
                 ")";
 
         try (Statement stmt = connection.createStatement()) {
@@ -105,7 +104,7 @@ public class DatabaseManager {
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
-            while (rs.next()) {//создание объектаиз каждой строки
+            while (rs.next()) {//создание объекта из каждой строки
                 records.add(new BestTimeRecord(
                         rs.getInt("id"),
                         rs.getString("room_name"),

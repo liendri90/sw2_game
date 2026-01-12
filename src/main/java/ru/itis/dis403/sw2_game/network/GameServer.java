@@ -5,14 +5,17 @@ import ru.itis.dis403.sw2_game.model.Maze;
 import ru.itis.dis403.sw2_game.model.Player;
 import ru.itis.dis403.sw2_game.model.Position;
 import ru.itis.dis403.sw2_game.db.DatabaseManager;
+import ru.itis.dis403.sw2_game.db.BestTimeRecord;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.awt.*;
 
 public class GameServer {
     private ServerSocket serverSocket;
@@ -241,7 +244,7 @@ public class GameServer {
         System.out.println("Результат сохранен в БД");
 
         // Получаем таблицу лидеров из БД
-        List<ru.itis.dis403.sw2_game.db.BestTimeRecord> leaderboard = dbManager.getRoomLeaderboard();
+        List<BestTimeRecord> leaderboard = dbManager.getRoomLeaderboard();
 
         // Отправляем результаты ВСЕМ клиентам
         System.out.println("Отправляю результаты всем " + clients.size() + " клиентам");
@@ -259,7 +262,7 @@ public class GameServer {
         if (leaderboard.isEmpty()) {
             System.out.println("(пока нет записей)");
         } else {
-            for (ru.itis.dis403.sw2_game.db.BestTimeRecord record : leaderboard) {
+            for (BestTimeRecord record : leaderboard) {
                 System.out.println(record);
             }
         }
@@ -327,12 +330,12 @@ public class GameServer {
                         if (gameState.getPlayers().isEmpty()) {
                             player = new Player(playerName,
                                     gameState.getMaze().getStart1(),
-                                    java.awt.Color.BLUE);
+                                    Color.BLUE);
                             System.out.println("Первый игрок добавлен: " + playerName);
                         } else {
                             player = new Player(playerName,
                                     gameState.getMaze().getStart2(),
-                                    java.awt.Color.RED);
+                                    Color.RED);
                             System.out.println("Второй игрок добавлен: " + playerName);
                         }
 

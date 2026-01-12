@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.awt.event.*;
+import java.time.format.*;
 
 public class GamePanel extends JFrame {
     private static final int CELL_SIZE = 25;
@@ -163,18 +165,17 @@ public class GamePanel extends JFrame {
         button.setBorder(BorderFactory.createRaisedBevelBorder());
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
+        button.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent evt) {
                 button.setBackground(color.darker());
             }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
+            public void mouseExited(MouseEvent evt) {
                 button.setBackground(color);
             }
         });
         return button;
     }
 
-    // ==================== ОБРАБОТКА СООБЩЕНИЙ ====================
 
     private void startMessageListener() {
         Thread listenerThread = new Thread(() -> {
@@ -407,7 +408,6 @@ public class GamePanel extends JFrame {
         });
     }
 
-    // ==================== ДИАЛОГИ РЕЗУЛЬТАТОВ ====================
 
     private void showLevelCompleteDialog(int level, long levelTime) {
         String message = String.format(
@@ -432,14 +432,14 @@ public class GamePanel extends JFrame {
     private void showFinalResultsDialog(long totalTime, int levelsCompleted, List<BestTimeRecord> leaderboard) {
         System.out.println("Показываю финальный диалог результатов...");
 
-        // Создаем диалоговое окно
+        // диалоговое окно
         JDialog dialog = new JDialog(this, "Результаты игры - ПОЗДРАВЛЯЕМ!", true);
         dialog.setSize(800, 700);
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
-        // Создаем HTML-сообщение
+        // HTML-сообщение
         StringBuilder html = new StringBuilder();
         html.append("<html><div style='width: 750px; padding: 10px;'>");
 
@@ -483,7 +483,7 @@ public class GamePanel extends JFrame {
                 html.append("<td align='center'>").append(record.getLevelsCompleted()).append("/10</td>");
                 html.append("<td align='center'>").append(formatTime(record.getTotalTime())).append("</td>");
                 html.append("<td align='center'>").append(
-                                record.getCreatedAt().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yy HH:mm")))
+                                record.getCreatedAt().format(DateTimeFormatter.ofPattern("dd.MM.yy HH:mm")))
                         .append("</td>");
                 html.append("</tr>");
                 position++;
@@ -560,9 +560,9 @@ public class GamePanel extends JFrame {
         dialog.add(buttonPanel, BorderLayout.SOUTH);
 
         // Добавляем обработчик закрытия окна
-        dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+        dialog.addWindowListener(new WindowAdapter() {
             @Override
-            public void windowClosed(java.awt.event.WindowEvent e) {
+            public void windowClosed(WindowEvent e) {
                 System.out.println("Диалог результатов закрыт");
             }
         });
@@ -581,11 +581,11 @@ public class GamePanel extends JFrame {
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setPreferredSize(new Dimension(150, 40));
 
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
+        button.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent evt) {
                 button.setBackground(color.darker());
             }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
+            public void mouseExited(MouseEvent evt) {
                 button.setBackground(color);
             }
         });
@@ -597,7 +597,6 @@ public class GamePanel extends JFrame {
         dialog.setVisible(true);
     }
 
-    // ==================== ИГРОВАЯ ЛОГИКА ====================
 
     private void setupKeyBindings() {
         InputMap inputMap = mazeCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
@@ -685,7 +684,6 @@ public class GamePanel extends JFrame {
         nextLevelTimer.start();
     }
 
-    // ==================== ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ====================
 
     private void updateGameState(GameState newState) {
         gameState = newState;
@@ -776,7 +774,6 @@ public class GamePanel extends JFrame {
         }
     }
 
-    // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
 
     private void showLevelHelp() {
         if (gameState == null) return;

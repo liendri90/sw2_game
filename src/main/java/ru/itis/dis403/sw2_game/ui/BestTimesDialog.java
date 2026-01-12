@@ -9,6 +9,8 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.SQLException;
 import java.util.List;
+import java.time.format.*;
+import java.awt.event.*;
 
 public class BestTimesDialog extends JDialog {
     private final DatabaseManager dbManager;
@@ -102,7 +104,6 @@ public class BestTimesDialog extends JDialog {
                     c.setBackground(new Color(180, 220, 255));
                 }
 
-                // Центрирование текста
                 setHorizontalAlignment(SwingConstants.CENTER);
                 if (column == 1) { // Название комнаты
                     setHorizontalAlignment(SwingConstants.LEFT);
@@ -177,11 +178,11 @@ public class BestTimesDialog extends JDialog {
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setPreferredSize(new Dimension(140, 35));
 
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
+        button.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent evt) {
                 button.setBackground(color.darker());
             }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
+            public void mouseExited(MouseEvent evt) {
                 button.setBackground(color);
             }
         });
@@ -214,7 +215,7 @@ public class BestTimesDialog extends JDialog {
                         roomName,
                         record.getLevelsCompleted() + " из 10",
                         formatTime(record.getTotalTime()),
-                        record.getCreatedAt().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
+                        record.getCreatedAt().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
                 });
                 position++;
                 if (position > 10) break;
