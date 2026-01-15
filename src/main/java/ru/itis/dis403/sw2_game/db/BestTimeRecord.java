@@ -8,10 +8,10 @@ public class BestTimeRecord implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private int id;
-    private String roomName; // Название комнаты
-    private long totalTime; // Общее время прохождения всех уровней
-    private LocalDateTime createdAt; // Дата прохождения
-    private int levelsCompleted; // Сколько уровней пройдено
+    private String roomName;
+    private long totalTime;
+    private LocalDateTime createdAt;
+    private int levelsCompleted;
 
     public BestTimeRecord(int id, String roomName, long totalTime,
                           LocalDateTime createdAt, int levelsCompleted) {
@@ -22,7 +22,7 @@ public class BestTimeRecord implements Serializable {
         this.levelsCompleted = levelsCompleted;
     }
 
-    // Геттеры
+
     public int getId() { return id; }
     public String getRoomName() { return roomName; }
     public long getTotalTime() { return totalTime; }

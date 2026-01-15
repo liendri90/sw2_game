@@ -45,17 +45,14 @@ public class BestTimesDialog extends JDialog {
     }
 
     private void initUI() {
-        // Создаем панель с таблицей
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Заголовок
         JLabel titleLabel = new JLabel("ТАБЛИЦА РЕКОРДОВ КОМНАТ", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
         titleLabel.setForeground(new Color(0, 100, 0));
         mainPanel.add(titleLabel, BorderLayout.NORTH);
 
-        // Создаем таблицу
         String[] columns = {"Место", "Название комнаты", "Уровней пройдено", "Общее время", "Дата прохождения"};
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
             @Override
@@ -76,14 +73,12 @@ public class BestTimesDialog extends JDialog {
         roomTable.setGridColor(new Color(200, 200, 200));
         roomTable.setShowGrid(true);
 
-        // Настраиваем ширину колонок
         roomTable.getColumnModel().getColumn(0).setPreferredWidth(60);
         roomTable.getColumnModel().getColumn(1).setPreferredWidth(250);
         roomTable.getColumnModel().getColumn(2).setPreferredWidth(100);
         roomTable.getColumnModel().getColumn(3).setPreferredWidth(150);
         roomTable.getColumnModel().getColumn(4).setPreferredWidth(150);
 
-        // Настраиваем рендерер для выделения текущей комнаты
         roomTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -105,7 +100,7 @@ public class BestTimesDialog extends JDialog {
                 }
 
                 setHorizontalAlignment(SwingConstants.CENTER);
-                if (column == 1) { // Название комнаты
+                if (column == 1) {
                     setHorizontalAlignment(SwingConstants.LEFT);
                 }
 
@@ -113,7 +108,6 @@ public class BestTimesDialog extends JDialog {
             }
         });
 
-        // Прокручиваемая панель для таблицы
         JScrollPane scrollPane = new JScrollPane(roomTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(new Color(100, 149, 237), 2),
@@ -122,7 +116,6 @@ public class BestTimesDialog extends JDialog {
 
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Панель кнопок
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
@@ -140,7 +133,6 @@ public class BestTimesDialog extends JDialog {
 
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
-        // Информационная панель
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         String infoText = "<html><b>Примечание:</b> В таблице отображаются комнаты, успешно прошедшие все 10 уровней.<br>" +

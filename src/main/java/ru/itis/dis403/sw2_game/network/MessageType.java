@@ -18,5 +18,5 @@ public enum MessageType {
     LEADERBOARD_DATA,
     CREATE_ROOM,
     ROOM_CREATED,
-    REQUEST_ROOMS // Новый тип сообщения для запроса списка комнат
+    REQUEST_ROOMS
 }

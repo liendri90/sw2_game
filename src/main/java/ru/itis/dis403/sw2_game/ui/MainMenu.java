@@ -34,14 +34,12 @@ public class MainMenu extends JFrame {
     }
 
     private void initUI() {
-        // Панель заголовка
         JPanel titlePanel = new JPanel();
         JLabel titleLabel = new JLabel("MAZE ESCAPE");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setForeground(new Color(0, 100, 0));
         titlePanel.add(titleLabel);
 
-        // Панель кнопок
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new GridLayout(4, 1, 10, 10));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(20, 50, 20, 50));
@@ -94,7 +92,6 @@ public class MainMenu extends JFrame {
             }
         });
 
-        // Панель информации
         JPanel infoPanel = new JPanel();
         infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         JLabel infoLabel = new JLabel("<html><center>Два игрока должны одновременно достичь выхода.<br>Дверь откроется только когда оба будут у выхода!</center></html>");
@@ -124,7 +121,6 @@ public class MainMenu extends JFrame {
     }
 
     private void createHostGame() throws SQLException {
-        // Запрашиваем имя хоста
         String playerName = JOptionPane.showInputDialog(this,
                 "Введите ваше имя (Хост):", "Создание игры", JOptionPane.QUESTION_MESSAGE);
 
@@ -134,7 +130,6 @@ public class MainMenu extends JFrame {
             return;
         }
 
-        // Запрашиваем название комнаты
         String roomName = JOptionPane.showInputDialog(this,
                 "Введите название комнаты:", "Создание игры", JOptionPane.QUESTION_MESSAGE);
 
@@ -148,13 +143,11 @@ public class MainMenu extends JFrame {
         final String finalRoomName = roomName.trim();
 
         try {
-            // Запускаем сервер в отдельном потоке
             Thread serverThread = new Thread(() -> {
                 try {
                     GameServer server = new GameServer(5555);
                     System.out.println("Сервер запущен на порту 5555");
 
-                    // Создаем комнату с введенным названием и именем хоста
                     server.createRoom(finalRoomName, finalPlayerName);
                     server.start();
                 } catch (Exception e) {
@@ -167,18 +160,14 @@ public class MainMenu extends JFrame {
             serverThread.setDaemon(true);
             serverThread.start();
 
-            // Ждем немного, чтобы сервер запустился
             Thread.sleep(2000);
 
-            // Подключаемся как первый клиент
             try {
                 GameClient client = new GameClient("localhost", 5555, finalPlayerName);
                 client.startListening();
 
-                // Отправляем сообщение о создании комнаты
                 client.sendMessage(new Message(MessageType.CREATE_ROOM, finalPlayerName, finalRoomName));
 
-                // Открываем игровое окно
                 SwingUtilities.invokeLater(() -> {
                     GamePanel gamePanel = new GamePanel(client, dbManager,
                             finalRoomName, "Хост: " + finalPlayerName);
@@ -209,8 +198,6 @@ public class MainMenu extends JFrame {
             String playerName = dialog.getPlayerName();
 
             SwingUtilities.invokeLater(() -> {
-                // При подключении к существующей комнате не знаем её названия
-                // Можно передать "Подключение к игре" или ждать получения названия от сервера
                 GamePanel gamePanel = new GamePanel(client, dbManager, "Подключение...", "Ожидание информации о комнате");
                 gamePanel.setVisible(true);
                 this.dispose();
@@ -220,7 +207,6 @@ public class MainMenu extends JFrame {
 
     private void showBestTimes() {
         try {
-            // Создаем и показываем диалог
             BestTimesDialog bestTimesDialog = new BestTimesDialog(this, dbManager);
             bestTimesDialog.setVisible(true);
         } catch (Exception e) {

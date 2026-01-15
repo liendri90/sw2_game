@@ -34,7 +34,6 @@ public class GameServer {
     private boolean roomActive = false;
     private boolean gameCompleted = false;
 
-    // НОВОЕ: флаг для отслеживания отправки состояния
     private boolean sendingState = false;
     private final Object stateLock = new Object();
 
@@ -100,7 +99,6 @@ public class GameServer {
         dbManager.disconnect();
     }
 
-    // НОВЫЙ МЕТОД: Гарантированная отправка состояния с подтверждением
     private void sendGuaranteedGameState() {
         synchronized (stateLock) {
             if (sendingState || gameCompleted || gameState == null) {
@@ -119,7 +117,7 @@ public class GameServer {
                         try {
                             client.output.writeObject(stateMessage);
                             client.output.flush();
-                            client.output.reset(); // Сбрасываем кэш для следующего сообщения
+                            client.output.reset();
                         } catch (IOException e) {
                             System.err.println("Ошибка отправки состояния клиенту " +
                                     client.playerName + ": " + e.getMessage());
@@ -128,7 +126,6 @@ public class GameServer {
                     }
                 }
 
-                // Удаляем отключившихся клиентов
                 for (ClientHandler client : disconnectedClients) {
                     client.disconnect();
                 }
@@ -177,13 +174,11 @@ public class GameServer {
 
         System.out.println("Переход с уровня " + oldLevel + " на уровень " + newLevel);
 
-        // Отправляем информацию о новом уровне
         broadcastToAll(new Message(MessageType.NEW_LEVEL,
                 "SERVER",
                 "Уровень " + newLevel + " - " + gameState.getMaze().getMazeType(),
                 gameState.createCopy()));
 
-        // Ждем 100мс и отправляем обновленное состояние
         try {
             Thread.sleep(100);
         } catch (InterruptedException e) {
@@ -192,7 +187,6 @@ public class GameServer {
 
         sendGuaranteedGameState();
 
-        // Если оба игрока подключены, автоматически стартуем через 2 секунды
         if (gameState.getPlayers().size() == 2) {
             Timer timer = new Timer();
             timer.schedule(new TimerTask() {
@@ -213,10 +207,8 @@ public class GameServer {
                             gameState.startGame();
                             levelStartTime = System.currentTimeMillis();
 
-                            // Сначала отправляем состояние
                             sendGuaranteedGameState();
 
-                            // Потом сообщение о старте
                             broadcastToAll(new Message(MessageType.GAME_STARTED,
                                     "SERVER",
                                     "Уровень " + newLevel + " начался! Идите к выходу!",
@@ -239,14 +231,11 @@ public class GameServer {
         System.out.println("Общее время: " + roomTotalTime + " мс");
         System.out.println("Уровней пройдено: " + gameState.getCurrentLevel());
 
-        // Сохраняем результат в БД
         dbManager.saveRoomResult(roomName, roomTotalTime, gameState.getCurrentLevel());
         System.out.println("Результат сохранен в БД");
 
-        // Получаем таблицу лидеров из БД
         List<BestTimeRecord> leaderboard = dbManager.getRoomLeaderboard();
 
-        // Отправляем результаты ВСЕМ клиентам
         System.out.println("Отправляю результаты всем " + clients.size() + " клиентам");
         for (ClientHandler client : clients.values()) {
             Message finalMessage = new Message(MessageType.GAME_COMPLETE,
@@ -257,7 +246,6 @@ public class GameServer {
             System.out.println("Отправлено клиенту: " + client.playerName);
         }
 
-        // Показываем таблицу лидеров в консоли
         System.out.println("=== ТАБЛИЦА РЕКОРДОВ КОМНАТ ===");
         if (leaderboard.isEmpty()) {
             System.out.println("(пока нет записей)");
@@ -348,7 +336,6 @@ public class GameServer {
 
                     sendMessage(new Message(MessageType.ROOM_INFO, "SERVER", roomName + "|" + roomDescription));
 
-                    // Отправляем состояние с небольшой задержкой
                     try {
                         Thread.sleep(50);
                     } catch (InterruptedException e) {
@@ -430,9 +417,8 @@ public class GameServer {
                         int cellValue = gameState.getMaze().getCellValue(newPos);
                         boolean moveAllowed = true;
 
-                        // ОБРАБОТКА СПЕЦИАЛЬНЫХ КЛЕТОК
                         switch (cellValue) {
-                            case 4: // ДВЕРЬ
+                            case 4:
                                 if (!player.hasKey()) {
                                     sendMessage(new Message(MessageType.INFO, "SERVER",
                                             "Нужен ключ, чтобы открыть дверь!"));
@@ -446,7 +432,7 @@ public class GameServer {
                                 }
                                 break;
 
-                            case 5: // КЛЮЧ
+                            case 5:
                                 player.addKey();
                                 gameState.getMaze().removeKey(newPos);
                                 sendMessage(new Message(MessageType.INFO, "SERVER",
@@ -454,7 +440,7 @@ public class GameServer {
                                 System.out.println(playerName + " подобрал ключ на позиции " + newPos);
                                 break;
 
-                            case 6: // ЛОВУШКА
+                            case 6:
                                 handleTrap(player, newPos);
                                 break;
                         }
@@ -463,32 +449,26 @@ public class GameServer {
                             return;
                         }
 
-                        // ВАЖНО: сначала устанавливаем новую позицию
                         player.setPosition(newPos);
 
                         if (gameState.getMaze().isTeleport(newPos)) {
                             handleTeleport(player, newPos);
                         }
 
-                        // ОТПРАВЛЯЕМ СОСТОЯНИЕ СРАЗУ ПОСЛЕ ДВИЖЕНИЯ
                         sendGuaranteedGameState();
 
-                        // ТОЛЬКО ПОСЛЕ отправки состояния проверяем выход
                         if (gameState.getMaze().isExit(newPos)) {
                             System.out.println("Игрок " + playerName + " достиг выхода на позиции " + newPos);
                             player.setAtExit(true);
 
-                            // Даем время клиентам отрисовать новое положение
                             try {
-                                Thread.sleep(100); // 100мс достаточно для отрисовки
+                                Thread.sleep(100);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }
 
-                            // Отправляем обновленное состояние (с флагом atExit)
                             sendGuaranteedGameState();
 
-                            // Проверяем, все ли у выхода
                             boolean allAtExit = gameState.getPlayers().stream()
                                     .allMatch(Player::isAtExit);
 
@@ -496,14 +476,12 @@ public class GameServer {
                                 System.out.println("ВСЕ игроки достигли выхода! Уровень завершен.");
                                 gameState.setGameFinished(true);
 
-                                // Даем еще немного времени на финальную отрисовку
                                 try {
                                     Thread.sleep(150);
                                 } catch (InterruptedException e) {
                                     Thread.currentThread().interrupt();
                                 }
 
-                                // Теперь обрабатываем завершение уровня
                                 handleLevelComplete();
                             }
                         } else if (gameState.getMaze().isFakeExit(newPos)) {
@@ -533,7 +511,6 @@ public class GameServer {
                             player.getName() + " телепортировался!"));
                     System.out.println(player.getName() + " телепортировался с " + teleportPos + " на " + pairedTeleport);
 
-                    // Сбрасываем эффект через 2 секунды
                     Timer timer = new Timer();
                     timer.schedule(new TimerTask() {
                         @Override
@@ -552,7 +529,6 @@ public class GameServer {
             player.setTrapActive(true);
             player.setPosition(trapPos);
 
-            // Отбрасываем игрока
             int[][] directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
             int[] dir = directions[random.nextInt(4)];
             int distance = 2 + random.nextInt(3);
@@ -578,7 +554,6 @@ public class GameServer {
             broadcastToAll(new Message(MessageType.INFO, "SERVER",
                     player.getName() + " попал в ловушку и отброшен!"));
 
-            // Сбрасываем эффект через 2 секунды
             Timer timer = new Timer();
             timer.schedule(new TimerTask() {
                 @Override
@@ -603,7 +578,6 @@ public class GameServer {
             System.out.println("Время уровня: " + levelTime + "мс");
             System.out.println("Общее время комнаты: " + roomTotalTime + "мс");
 
-            // Отправляем результаты уровня всем игрокам
             for (Player player : gameState.getPlayers()) {
                 ClientHandler client = clients.get(player.getName());
                 if (client != null) {
@@ -615,12 +589,10 @@ public class GameServer {
                 }
             }
 
-            // ВАЖНО: Проверяем, был ли это 10 уровень
             if (gameState.getCurrentLevel() >= 10) {
                 System.out.println("=== ЭТО БЫЛ 10 УРОВЕНЬ! ЗАВЕРШАЕМ ИГРУ ===");
                 gameState.setAllLevelsCompleted(true);
 
-                // Немедленно завершаем игру
                 Timer timer = new Timer();
                 timer.schedule(new TimerTask() {
                     @Override
@@ -629,9 +601,8 @@ public class GameServer {
                             handleGameComplete();
                         }
                     }
-                }, 2000); // 2 секунды задержки
+                }, 2000);
             } else {
-                // Автоматический переход на следующий уровень через 3 секунды
                 Timer timer = new Timer();
                 timer.schedule(new TimerTask() {
                     @Override

@@ -326,7 +326,6 @@ public class GamePanel extends JFrame {
 
         System.out.println("=== НАЧИНАЕМ ОБРАБОТКУ ЗАВЕРШЕНИЯ ИГРЫ ===");
 
-        // Останавливаем таймеры
         if (scheduler != null) {
             scheduler.shutdown();
         }
@@ -360,7 +359,6 @@ public class GamePanel extends JFrame {
             }
         }
 
-        // Обновляем интерфейс
         long finalTotalTime = totalTime;
         SwingUtilities.invokeLater(() -> {
             roomLabel.setText("Комната: " + currentRoom + " - ЗАВЕРШЕНО");
@@ -383,7 +381,6 @@ public class GamePanel extends JFrame {
             mazeCanvas.repaint();
         });
 
-        // Получаем таблицу лидеров
         Object payload = message.getPayload();
         List<BestTimeRecord> leaderboard = null;
 
@@ -399,7 +396,6 @@ public class GamePanel extends JFrame {
             }
         }
 
-        // Показываем диалог с результатами
         long finalTotalTime1 = totalTime;
         int finalLevelsCompleted = levelsCompleted;
         List<BestTimeRecord> finalLeaderboard = leaderboard;
@@ -432,18 +428,15 @@ public class GamePanel extends JFrame {
     private void showFinalResultsDialog(long totalTime, int levelsCompleted, List<BestTimeRecord> leaderboard) {
         System.out.println("Показываю финальный диалог результатов...");
 
-        // диалоговое окно
         JDialog dialog = new JDialog(this, "Результаты игры - ПОЗДРАВЛЯЕМ!", true);
         dialog.setSize(800, 700);
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
-        // HTML-сообщение
         StringBuilder html = new StringBuilder();
         html.append("<html><div style='width: 750px; padding: 10px;'>");
 
-        // Заголовок с иконкой
         html.append("<div style='text-align: center; background-color: #2E8B57; padding: 15px; border-radius: 10px;'>");
         html.append("<h1 style='color: white; margin: 0;'> ПОЗДРАВЛЯЕМ! </h1>");
         html.append("<h3 style='color: white; margin: 5px 0 0 0;'>Комната '").append(currentRoom).append("' прошла все 10 уровней!</h3>");
@@ -451,7 +444,6 @@ public class GamePanel extends JFrame {
 
         html.append("<br>");
 
-        // Результаты текущей комнаты
         html.append("<div style='background-color: #f0f8ff; padding: 15px; border-radius: 10px; border: 2px solid #4682b4;'>");
         html.append("<h3 style='color: #2E8B57; text-align: center;'>Ваши результаты:</h3>");
         html.append("<table border='0' cellspacing='10' style='margin: 0 auto; font-size: 14px;'>");
@@ -461,7 +453,6 @@ public class GamePanel extends JFrame {
         html.append("</table>");
         html.append("</div>");
 
-        // Таблица рекордов
         if (leaderboard != null && !leaderboard.isEmpty()) {
             html.append("<br><hr><br>");
             html.append("<h3 style='text-align: center; color: #2E8B57;'> ТАБЛИЦА РЕКОРДОВ КОМНАТ </h3>");
@@ -491,7 +482,6 @@ public class GamePanel extends JFrame {
             }
             html.append("</table>");
 
-            // Проверяем, попала ли текущая комната в топ-10
             boolean inTop10 = leaderboard.stream()
                     .limit(10)
                     .anyMatch(r -> r.getRoomName().equals(currentRoom));
@@ -518,7 +508,6 @@ public class GamePanel extends JFrame {
 
         html.append("</div></html>");
 
-        // Текстовое поле с HTML
         JTextPane textPane = new JTextPane();
         textPane.setContentType("text/html");
         textPane.setText(html.toString());
@@ -529,10 +518,8 @@ public class GamePanel extends JFrame {
         JScrollPane scrollPane = new JScrollPane(textPane);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Панель кнопок
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
 
-        // Кнопка для просмотра полной таблицы
         if (leaderboard != null && !leaderboard.isEmpty()) {
             JButton fullTableButton = createDialogButton("Просмотр полной таблицы", new Color(60, 179, 113));
             fullTableButton.addActionListener(e -> {
@@ -542,14 +529,12 @@ public class GamePanel extends JFrame {
             buttonPanel.add(fullTableButton);
         }
 
-        // Кнопка возврата в меню
         JButton menuButton = createDialogButton("В главное меню", new Color(70, 130, 180));
         menuButton.addActionListener(e -> {
             dialog.dispose();
             returnToMenu();
         });
 
-        // Кнопка закрытия
         JButton closeButton = createDialogButton("Закрыть", new Color(100, 100, 100));
         closeButton.addActionListener(e -> dialog.dispose());
 
@@ -559,7 +544,6 @@ public class GamePanel extends JFrame {
         dialog.add(scrollPane, BorderLayout.CENTER);
         dialog.add(buttonPanel, BorderLayout.SOUTH);
 
-        // Добавляем обработчик закрытия окна
         dialog.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent e) {
@@ -567,7 +551,6 @@ public class GamePanel extends JFrame {
             }
         });
 
-        // Показываем диалог
         System.out.println("Показываю диалог результатов");
         dialog.setVisible(true);
     }
@@ -881,7 +864,6 @@ public class GamePanel extends JFrame {
         super.dispose();
     }
 
-    // ==================== ВНУТРЕННИЙ КЛАСС ДЛЯ ОТРИСОВКИ ЛАБИРИНТА ====================
 
     private class MazeCanvas extends JPanel {
         public MazeCanvas() {

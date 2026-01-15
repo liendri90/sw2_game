@@ -7,7 +7,6 @@ import java.util.List;
 public class DatabaseManager {
     private Connection connection;
 
-    // Конфигурация PostgreSQL
     private String url = "jdbc:postgresql://localhost:5432/best_times";
     private String user = "postgres";
     private String password = "safiullina90";
@@ -26,7 +25,6 @@ public class DatabaseManager {
             connection = DriverManager.getConnection(url, user, password);
             System.out.println("Подключено к базе данных");
 
-            // Создаем таблицу с упрощенной структурой
             createTables();
         }
     }
@@ -48,9 +46,7 @@ public class DatabaseManager {
         }
     }
 
-    // Сохранение результата комнаты
     public void saveRoomResult(String roomName, long totalTime, int levelsCompleted) {
-        // Проверяем, существует ли уже запись для этой комнаты
         String checkSql = "SELECT COUNT(*) FROM room_stats WHERE room_name = ?";
         String insertSql = "INSERT INTO room_stats (room_name, total_time, levels_completed) VALUES (?, ?, ?)";
         String updateSql = "UPDATE room_stats SET total_time = ?, levels_completed = ?, created_at = CURRENT_TIMESTAMP WHERE room_name = ?";
@@ -60,14 +56,12 @@ public class DatabaseManager {
             ResultSet rs = checkStmt.executeQuery();
 
             if (rs.next() && rs.getInt(1) > 0) {
-                // Обновляем существующую запись (только если новое время лучше)
                 String selectTimeSql = "SELECT total_time FROM room_stats WHERE room_name = ?";
                 try (PreparedStatement selectStmt = connection.prepareStatement(selectTimeSql)) {
                     selectStmt.setString(1, roomName);
                     ResultSet timeRs = selectStmt.executeQuery();
                     if (timeRs.next()) {
                         long existingTime = timeRs.getLong("total_time");
-                        // Обновляем только если новый результат лучше (меньшее время)
                         if (totalTime < existingTime) {
                             try (PreparedStatement updateStmt = connection.prepareStatement(updateSql)) {
                                 updateStmt.setLong(1, totalTime);
@@ -82,7 +76,6 @@ public class DatabaseManager {
                     }
                 }
             } else {
-                // Создаем новую запись
                 try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
                     insertStmt.setString(1, roomName);
                     insertStmt.setLong(2, totalTime);
@@ -96,15 +89,14 @@ public class DatabaseManager {
         }
     }
 
-    // Получение лучших результатов комнат
     public List<BestTimeRecord> getRoomLeaderboard() {
         List<BestTimeRecord> records = new ArrayList<>();
-        String sql = "SELECT * FROM room_stats ORDER BY total_time ASC, levels_completed DESC LIMIT 10";//сортировка по времени и уровню
+        String sql = "SELECT * FROM room_stats ORDER BY total_time ASC, levels_completed DESC LIMIT 10";
 
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
-            while (rs.next()) {//создание объекта из каждой строки
+            while (rs.next()) {
                 records.add(new BestTimeRecord(
                         rs.getInt("id"),
                         rs.getString("room_name"),
@@ -120,12 +112,10 @@ public class DatabaseManager {
         return records;
     }
 
-    // Получение всех записей (для обратной совместимости)
     public List<BestTimeRecord> findAll() {
         return getRoomLeaderboard();
     }
 
-    // Очистка всех записей (для BestTimesDialog)
     public void clearAllRecords() throws SQLException {
         String sql = "DELETE FROM room_stats";
 
@@ -138,7 +128,6 @@ public class DatabaseManager {
         }
     }
 
-    // Удаление старой статистики (опционально)
     public void cleanupOldRecords(int daysToKeep) {
         String sql = "DELETE FROM room_stats WHERE created_at < NOW() - INTERVAL ? DAY";
 

@@ -37,11 +37,9 @@ public class Maze implements Serializable {
         System.out.println("=== ГЕНЕРАЦИЯ УНИКАЛЬНОГО ЛАБИРИНТА УРОВНЯ " + level + " ===");
         System.out.println("Размер: " + width + "x" + height);
 
-        // Используем новый генератор с улучшенной логикой
         MazeGenerator generator = new MazeGenerator(width, height, level);
         this.grid = generator.generateMaze();
 
-        // Определяем тип лабиринта
         String[] mazeTypes = {
                 "СПИРАЛЬ", "КРЕСТ", "АЛМАЗ", "КРУГИ", "ТЕЛЕПОРТЫ",
                 "МНОГО ВЫХОДОВ", "СЛУЧАЙНЫЙ", "РЕКУРСИВНЫЙ", "КЛЮЧИ", "ФИНАЛЬНЫЙ"
@@ -51,13 +49,10 @@ public class Maze implements Serializable {
 
         System.out.println("Тип лабиринта: " + mazeType);
 
-        // Собираем специальные клетки
         collectSpecialCells();
 
-        // Устанавливаем позиции
         setPositions();
 
-        // ГАРАНТИРУЕМ связность
         ensurePathsForAllLevels();
 
         System.out.println("=== ЛАБИРИНТ СОЗДАН ===");
@@ -77,54 +72,40 @@ public class Maze implements Serializable {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 switch (grid[y][x]) {
-                    case 2: // Телепорт
+                    case 2:
                         teleports.add(new Position(x, y));
                         break;
-                    case 3: // Ложный выход
+                    case 3:
                         fakeExits.add(new Position(x, y));
                         break;
-                    case 4: // Дверь
+                    case 4:
                         doors.add(new Position(x, y));
                         doorCount++;
-                        System.out.println("НАЙДЕНА ДВЕРЬ на позиции: (" + x + ", " + y + ")");
                         break;
-                    case 5: // Ключ
+                    case 5:
                         keys.add(new Position(x, y));
                         keyCount++;
-                        System.out.println("НАЙДЕН КЛЮЧ на позиции: (" + x + ", " + y + ")");
                         break;
-                    case 6: // Ловушка
+                    case 6:
                         traps.add(new Position(x, y));
                         break;
                 }
             }
         }
 
-        // Отладочный вывод
-        System.out.println("=== ОТЛАДКА: СПЕЦИАЛЬНЫЕ ЭЛЕМЕНТЫ ===");
-        System.out.println("Дверей найдено: " + doorCount);
-        System.out.println("Ключей найдено: " + keyCount);
-        System.out.println("Телепортов: " + teleports.size());
-        System.out.println("Ложных выходов: " + fakeExits.size());
-        System.out.println("Ловушек: " + traps.size());
-        System.out.println("================================");
 
-        // Проверяем, есть ли хотя бы одна дверь
+
         if (doorCount == 0) {
-            System.out.println("ВНИМАНИЕ: В лабиринте уровня " + level + " не найдено ни одной двери!");
-            // Добавляем дверь вручную в экстренном случае
             addEmergencyDoor();
         }
     }
 
     private void addEmergencyDoor() {
-        // Ищем первую свободную клетку и добавляем дверь
         for (int y = 1; y < height - 1; y++) {
             for (int x = 1; x < width - 1; x++) {
                 if (grid[y][x] == 0) {
-                    grid[y][x] = 4; // Дверь
+                    grid[y][x] = 4;
                     doors.add(new Position(x, y));
-                    System.out.println("ЭКСТРЕННО ДОБАВЛЕНА ДВЕРЬ на позиции: (" + x + ", " + y + ")");
                     return;
                 }
             }
@@ -132,7 +113,6 @@ public class Maze implements Serializable {
     }
 
     private void printSpecialCellsInfo() {
-        System.out.println("=== СПЕЦИАЛЬНЫЕ ЭЛЕМЕНТЫ УРОВНЯ " + level + " ===");
         System.out.println("- Телепортов: " + teleports.size());
         for (int i = 0; i < teleports.size(); i++) {
             System.out.println("  Телепорт " + (i+1) + " на позиции: " + teleports.get(i));
@@ -161,16 +141,13 @@ public class Maze implements Serializable {
         System.out.println("- Старт 1: " + start1);
         System.out.println("- Старт 2: " + start2);
         System.out.println("- Выход: " + exit);
-        System.out.println("=================================");
     }
 
     private void setPositions() {
-        // Стандартная логика для позиций
         start1 = findSafePosition(true);
         start2 = findSafePosition(false);
         exit = findExitPosition();
 
-        // Гарантируем, что позиции проходимы
         if (start1 != null) grid[start1.getY()][start1.getX()] = 0;
         if (start2 != null) grid[start2.getY()][start2.getX()] = 0;
         if (exit != null) grid[exit.getY()][exit.getX()] = 0;
@@ -186,11 +163,9 @@ public class Maze implements Serializable {
             int x, y;
 
             if (isFirst) {
-                // Первый игрок - левый верхний угол
                 x = 2 + random.nextInt(Math.max(1, width / 4));
                 y = 2 + random.nextInt(Math.max(1, height / 4));
             } else {
-                // Второй игрок - правый нижний угол
                 x = width - 3 - random.nextInt(Math.max(1, width / 4));
                 y = height - 3 - random.nextInt(Math.max(1, height / 4));
             }
@@ -201,18 +176,15 @@ public class Maze implements Serializable {
             attempts++;
         }
 
-        // Резервные позиции
         return isFirst ? new Position(1, 1) : new Position(width - 2, height - 2);
     }
 
     private Position findExitPosition() {
-        // Пытаемся поставить выход в противоположном от стартов квадранте
         int attempts = 0;
         while (attempts < 100) {
             int x = width / 4 + random.nextInt(width / 2);
             int y = height / 4 + random.nextInt(height / 2);
 
-            // Проверяем расстояние до стартов
             if (start1 != null && start2 != null) {
                 double dist1 = distance(x, y, start1.getX(), start1.getY());
                 double dist2 = distance(x, y, start2.getX(), start2.getY());
@@ -230,15 +202,12 @@ public class Maze implements Serializable {
             attempts++;
         }
 
-        // Центр как запасной вариант
         return new Position(width / 2, height / 2);
     }
 
-    // ГАРАНТИРУЕМ связность для всех уровней
     private void ensurePathsForAllLevels() {
         System.out.println("Проверка путей для уровня " + level + ":");
 
-        // Проверяем путь от каждого старта к выходу
         boolean path1 = isPathExists(start1, exit);
         boolean path2 = isPathExists(start2, exit);
 
@@ -255,11 +224,9 @@ public class Maze implements Serializable {
             createGuaranteedPath(start2, exit);
         }
 
-        // Для лабиринтов с дверями гарантируем, что хотя бы некоторые ключи ведут к дверям
-        if (level >= 8) { // Уровни 8, 9, 10 с дверями
+        if (level >= 8) {
             System.out.println("Проверка путей к ключам для уровня " + level);
 
-            // Создаем пути от ключей к ближайшим дверям
             for (Position key : keys) {
                 Position nearestDoor = findNearestDoor(key);
                 if (nearestDoor != null && !isPathExists(key, nearestDoor)) {
@@ -345,7 +312,6 @@ public class Maze implements Serializable {
         return false;
     }
 
-    // Вспомогательные методы
     private boolean isValidPosition(int x, int y) {
         return x >= 0 && x < width && y >= 0 && y < height;
     }
@@ -374,7 +340,6 @@ public class Maze implements Serializable {
         return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
     }
 
-    // Основные методы для движения
     public boolean canMove(Position from, Position to) {
         if (to.getX() < 0 || to.getX() >= width ||
                 to.getY() < 0 || to.getY() >= height) {
@@ -383,12 +348,10 @@ public class Maze implements Serializable {
 
         int cellValue = grid[to.getY()][to.getX()];
 
-        // Проверяем специальные клетки
         switch (cellValue) {
-            case 1: // Стена
+            case 1:
                 return false;
-            case 4: // Дверь
-                // Дверь - проходима только с ключом (проверяется в другом месте)
+            case 4:
                 return true;
             default:
                 return true;
@@ -398,7 +361,7 @@ public class Maze implements Serializable {
     public int getCellValue(Position pos) {
         if (pos.getX() < 0 || pos.getX() >= width ||
                 pos.getY() < 0 || pos.getY() >= height) {
-            return 1; // Стена, если вне границ
+            return 1;
         }
         return grid[pos.getY()][pos.getX()];
     }
@@ -465,7 +428,6 @@ public class Maze implements Serializable {
         int index = teleports.indexOf(teleport);
         if (index == -1) return null;
 
-        // Возвращаем парный телепорт (если четный - следующий, если нечетный - предыдущий)
         if (index % 2 == 0 && index + 1 < teleports.size()) {
             return teleports.get(index + 1);
         } else if (index % 2 == 1) {
@@ -484,7 +446,6 @@ public class Maze implements Serializable {
         grid[door.getY()][door.getX()] = 0;
     }
 
-    // Геттеры
     public int getWidth() { return width; }
     public int getHeight() { return height; }
     public int[][] getGrid() { return grid; }

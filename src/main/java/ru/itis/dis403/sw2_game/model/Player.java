@@ -11,9 +11,9 @@ public class Player implements Serializable {
     private boolean atExit;
     private long startTime;
     private long finishTime;
-    private int keys; // Количество собранных ключей
-    private boolean hasTeleported; // Флаг телепортации
-    private boolean trapActive; // Активна ли ловушка
+    private int keys;
+    private boolean hasTeleported;
+    private boolean trapActive;
 
     public Player(String name, Position position, Color color) {
         this.name = name;
@@ -28,7 +28,6 @@ public class Player implements Serializable {
         this.trapActive = false;
     }
 
-    // Геттеры и сеттеры
     public String getName() { return name; }
     public Position getPosition() { return position; }
     public Color getColor() { return color; }
@@ -48,7 +47,6 @@ public class Player implements Serializable {
     public void setHasTeleported(boolean hasTeleported) { this.hasTeleported = hasTeleported; }
     public void setTrapActive(boolean trapActive) { this.trapActive = trapActive; }
 
-    // Методы для ключей
     public void addKey() { this.keys++; }
     public boolean useKey() {
         if (this.keys > 0) {
@@ -77,7 +75,6 @@ public class Player implements Serializable {
 
     public void setKeys(int keys) { this.keys = keys; }
 
-    // Метод для получения массива ключей (для копирования)
     public int[] getKeyArray() {
         return new int[]{keys};
     }

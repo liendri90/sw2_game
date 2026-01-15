@@ -24,7 +24,6 @@ public class GameState implements Serializable {
     }
 
     private void generateMazeForCurrentLevel() {
-        // ФИКСИРОВАННЫЙ РАЗМЕР ДЛЯ ВСЕХ УРОВНЕЙ - 25x25
         int mazeSize = 25;
 
         this.maze = new Maze(mazeSize, mazeSize, currentLevel);
@@ -91,21 +90,17 @@ public class GameState implements Serializable {
             currentLevel++;
             generateMazeForCurrentLevel();
 
-            // Сбрасываем все флаги
             gameStarted = false;
             gameFinished = false;
             gameStartTime = 0;
 
-            // Сбрасываем состояние игроков (сохраняем готовность!)
             for (Player player : players) {
-                // НЕ сбрасываем готовность для автоматического старта
                 player.setAtExit(false);
                 player.setStartTime(0);
                 player.setFinishTime(0);
                 player.resetSpecialStates();
-                player.setKeys(0); // Сбрасываем ключи
+                player.setKeys(0);
 
-                // Устанавливаем на новые стартовые позиции
                 if (players.indexOf(player) == 0) {
                     player.setPosition(maze.getStart1());
                 } else if (players.indexOf(player) == 1) {
@@ -116,7 +111,6 @@ public class GameState implements Serializable {
             System.out.println("=== ПЕРЕХОД НА УРОВЕНЬ " + currentLevel + " ===");
             System.out.println("Состояние игроков сброшено (готовность сохраняется)");
 
-            // Автоматически помечаем всех игроков как готовых
             if (players.size() == 2) {
                 for (Player player : players) {
                     player.setReady(true);
@@ -132,7 +126,6 @@ public class GameState implements Serializable {
     public GameState createCopy() {
         GameState copy = new GameState();
 
-        // Копируем основные поля
         copy.gameStarted = this.gameStarted;
         copy.gameFinished = this.gameFinished;
         copy.currentLevel = this.currentLevel;
@@ -140,10 +133,8 @@ public class GameState implements Serializable {
         copy.maxLevels = this.maxLevels;
         copy.allLevelsCompleted = this.allLevelsCompleted;
 
-        // Используем тот же лабиринт
         copy.maze = this.maze;
 
-        // Копируем игроков
         copy.players = new ArrayList<>();
         for (Player original : this.players) {
             Player playerCopy = new Player(
@@ -165,7 +156,6 @@ public class GameState implements Serializable {
         return copy;
     }
 
-    // Геттеры и сеттеры
     public Maze getMaze() { return maze; }
     public List<Player> getPlayers() { return players; }
     public boolean isGameStarted() { return gameStarted; }

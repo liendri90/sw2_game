@@ -27,7 +27,6 @@ public class GameClient {
         this.messageQueue = new LinkedBlockingQueue<>();
         this.currentGameState = null;
 
-        // Отправляем сообщение о подключении
         sendMessage(new Message(MessageType.PLAYER_JOIN, playerName));
     }
 

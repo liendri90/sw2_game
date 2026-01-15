@@ -50,7 +50,6 @@ public class ConnectionDialog extends JDialog {
         connectButton.addActionListener(e -> connectToServer());
         panel.add(connectButton);
 
-        // Панель кнопок
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         cancelButton = new JButton("Отмена");
         cancelButton.addActionListener(e -> dispose());
@@ -63,7 +62,7 @@ public class ConnectionDialog extends JDialog {
     private void connectToServer() {
         String host = hostField.getText().trim();
         String portText = portField.getText().trim();
-        playerName = nameField.getText().trim(); // Получаем имя игрока
+        playerName = nameField.getText().trim();
 
         if (playerName.isEmpty()) {
             JOptionPane.showMessageDialog(this,
@@ -75,11 +74,9 @@ public class ConnectionDialog extends JDialog {
         try {
             int port = Integer.parseInt(portText);
 
-            // Пытаемся подключиться
             client = new GameClient(host, port, playerName);
             client.startListening();
 
-            // Отправляем сообщение о присоединении
             client.sendMessage(new Message(MessageType.PLAYER_JOIN, playerName));
 
             connected = true;

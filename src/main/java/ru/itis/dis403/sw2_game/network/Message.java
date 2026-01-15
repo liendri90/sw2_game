@@ -27,7 +27,6 @@ public class Message implements Serializable {
         this.payload = payload;
     }
 
-    // Геттеры и сеттеры
     public MessageType getType() { return type; }
     public String getSender() { return sender; }
     public String getData() { return data; }

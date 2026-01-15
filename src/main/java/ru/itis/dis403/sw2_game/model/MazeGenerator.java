@@ -19,14 +19,12 @@ public class MazeGenerator implements Serializable {
     public int[][] generateMaze() {
         int[][] grid = new int[height][width];
 
-        // Инициализация всех клеток как стен
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 grid[y][x] = 1;
             }
         }
 
-        // Выбор алгоритма в зависимости от уровня
         switch (level) {
             case 1:
                 return generateSpiralMaze(grid);
@@ -53,7 +51,6 @@ public class MazeGenerator implements Serializable {
         }
     }
 
-    // 1. СПИРАЛЬНЫЙ ЛАБИРИНТ (уровень 1) - ДВЕРИ С КЛЮЧАМИ
     private int[][] generateSpiralMaze(int[][] grid) {
         System.out.println("=== ГЕНЕРАЦИЯ СПИРАЛЬНОГО ЛАБИРИНТА (УРОВЕНЬ 1) ===");
 
@@ -61,14 +58,12 @@ public class MazeGenerator implements Serializable {
         int centerY = height / 2;
         int maxRadius = Math.min(width, height) / 2 - 2;
 
-        // Создаем спираль с центральной площадкой
         for (int y = centerY - 2; y <= centerY + 2; y++) {
             for (int x = centerX - 2; x <= centerX + 2; x++) {
                 if (isValid(x, y)) grid[y][x] = 0;
             }
         }
 
-        // Спиральные кольца
         for (int r = 1; r <= maxRadius; r++) {
             int ringSize = r * 8;
             for (int i = 0; i < ringSize; i++) {
@@ -78,7 +73,6 @@ public class MazeGenerator implements Serializable {
 
                 if (isValid(x, y)) {
                     grid[y][x] = 0;
-                    // Соединяем с внутренним кольцом
                     if (r > 1 && i % (r*2) == 0) {
                         int innerX = (int)(centerX + (r-1) * Math.cos(angle));
                         int innerY = (int)(centerY + (r-1) * Math.sin(angle));
@@ -88,7 +82,6 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // Выходы из спирали
         for (int i = 0; i < 4; i++) {
             double angle = i * Math.PI / 2;
             for (int r = 1; r <= maxRadius; r++) {
@@ -98,18 +91,15 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // ДОБАВЛЯЕМ ДВЕРИ С КЛЮЧАМИ ДЛЯ УРОВНЯ 1
         addDoorsAndKeysToLevel(grid, 2, 3);
 
         System.out.println("=== СПИРАЛЬНЫЙ ЛАБИРИНТ СОЗДАН ===");
         return grid;
     }
 
-    // 2. КРЕСТООБРАЗНЫЙ ЛАБИРИНТ (уровень 2)
     private int[][] generateCrossMaze(int[][] grid) {
         System.out.println("=== ГЕНЕРАЦИЯ КРЕСТООБРАЗНОГО ЛАБИРИНТА (УРОВЕНЬ 2) ===");
 
-        // Центральный крест
         for (int y = 1; y < height - 1; y++) {
             grid[y][width / 2] = 0;
             if (y % 3 == 0) {
@@ -130,26 +120,22 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // Угловые комнаты
         createRoom(grid, 2, 2, 4, 4);
         createRoom(grid, width - 6, 2, 4, 4);
         createRoom(grid, 2, height - 6, 4, 4);
         createRoom(grid, width - 6, height - 6, 4, 4);
 
-        // Соединяем комнаты с центром
         createPath(grid, 4, 4, width / 2, 4);
         createPath(grid, width - 6, 4, width / 2, 4);
         createPath(grid, 4, height - 6, width / 2, height - 6);
         createPath(grid, width - 6, height - 6, width / 2, height - 6);
 
-        // ДОБАВЛЯЕМ ДВЕРИ С КЛЮЧАМИ ДЛЯ УРОВНЯ 2
         addDoorsAndKeysToLevel(grid, 3, 4);
 
         System.out.println("=== КРЕСТООБРАЗНЫЙ ЛАБИРИНТ СОЗДАН ===");
         return grid;
     }
 
-    // 3. АЛМАЗНЫЙ ЛАБИРИНТ (уровень 3)
     private int[][] generateDiamondMaze(int[][] grid) {
         System.out.println("=== ГЕНЕРАЦИЯ АЛМАЗНОГО ЛАБИРИНТА (УРОВЕНЬ 3) ===");
 
@@ -157,7 +143,6 @@ public class MazeGenerator implements Serializable {
         int centerY = height / 2;
         int size = Math.min(width, height) / 2 - 2;
 
-        // Ромб
         for (int i = -size; i <= size; i++) {
             int rowWidth = size - Math.abs(i);
             for (int j = -rowWidth; j <= rowWidth; j++) {
@@ -167,7 +152,6 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // Диагональные перегородки
         for (int d = 1; d < size; d += 2) {
             for (int i = -d; i <= d; i++) {
                 int x1 = centerX - d + Math.abs(i);
@@ -180,7 +164,6 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // Проходы в перегородках
         for (int d = 2; d < size; d += 3) {
             int breakPos = random.nextInt(d * 2 + 1) - d;
             int x = centerX - d + Math.abs(breakPos);
@@ -193,15 +176,13 @@ public class MazeGenerator implements Serializable {
             if (isValid(x, y)) grid[y][x] = 0;
         }
 
-        // ДОБАВЛЯЕМ ДВЕРИ С КЛЮЧАМИ ДЛЯ УРОВНЯ 3
         addDoorsAndKeysToLevel(grid, 2, 3);
 
-        // Добавляем телепорты
         int numTeleports = 2;
         for (int i = 0; i < numTeleports; i++) {
             Position pos = findEmptySpace(grid, 4);
             if (pos != null) {
-                grid[pos.getY()][pos.getX()] = 2; // Телепорт
+                grid[pos.getY()][pos.getX()] = 2;
                 System.out.println("Добавлен телепорт на позиции: " + pos);
             }
         }
@@ -210,7 +191,6 @@ public class MazeGenerator implements Serializable {
         return grid;
     }
 
-    // 4. КРУГОВОЙ ЛАБИРИНТ (уровень 4)
     private int[][] generateCircularMaze(int[][] grid) {
         System.out.println("=== ГЕНЕРАЦИЯ КРУГОВОГО ЛАБИРИНТА (УРОВЕНЬ 4) ===");
 
@@ -218,10 +198,8 @@ public class MazeGenerator implements Serializable {
         int centerY = height / 2;
         int maxRadius = Math.min(width, height) / 2 - 2;
 
-        // Центральная комната
         createRoom(grid, centerX - 3, centerY - 3, 6, 6);
 
-        // Концентрические круги
         for (int r = 1; r <= maxRadius; r++) {
             int circumference = (int)(2 * Math.PI * r);
             for (int p = 0; p < circumference; p++) {
@@ -231,7 +209,6 @@ public class MazeGenerator implements Serializable {
                 if (isValid(x, y)) grid[y][x] = 0;
             }
 
-            // Прерывания в кругах
             if (r % 2 == 0) {
                 int breaks = 3 + random.nextInt(3);
                 for (int b = 0; b < breaks; b++) {
@@ -245,7 +222,6 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // Радиальные проходы
         int numRadial = 4 + random.nextInt(4);
         for (int i = 0; i < numRadial; i++) {
             double angle = i * (2 * Math.PI / numRadial);
@@ -256,15 +232,13 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // ДОБАВЛЯЕМ ДВЕРИ С КЛЮЧАМИ ДЛЯ УРОВНЯ 4
         addDoorsAndKeysToLevel(grid, 3, 4);
 
-        // Добавляем ловушки
         int numTraps = 3;
         for (int i = 0; i < numTraps; i++) {
             Position pos = findEmptySpace(grid, 3);
             if (pos != null) {
-                grid[pos.getY()][pos.getX()] = 6; // Ловушка
+                grid[pos.getY()][pos.getX()] = 6;
                 System.out.println("Добавлена ловушка на позиции: " + pos);
             }
         }
@@ -273,16 +247,13 @@ public class MazeGenerator implements Serializable {
         return grid;
     }
 
-    // 5. ЛАБИРИНТ С ТЕЛЕПОРТАМИ (уровень 5)
     private int[][] generateMazeWithTeleports(int[][] grid) {
         System.out.println("=== ГЕНЕРАЦИЯ ЛАБИРИНТА С ТЕЛЕПОРТАМИ (УРОВЕНЬ 5) ===");
 
         generatePrimMaze(grid);
 
-        // ДОБАВЛЯЕМ ДВЕРИ С КЛЮЧАМИ ДЛЯ УРОВНЯ 5
         addDoorsAndKeysToLevel(grid, 3, 4);
 
-        // Добавляем телепорты (пары)
         int numTeleportPairs = 4;
         List<Position> teleportPositions = new ArrayList<>();
 
@@ -295,7 +266,6 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // Соединяем телепорты коридорами
         for (int i = 0; i < teleportPositions.size(); i += 2) {
             if (i + 1 < teleportPositions.size()) {
                 Position t1 = teleportPositions.get(i);
@@ -304,7 +274,6 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // Добавляем несколько ловушек
         int numTraps = 3;
         for (int i = 0; i < numTraps; i++) {
             Position pos = findEmptySpace(grid, 4);
@@ -318,28 +287,23 @@ public class MazeGenerator implements Serializable {
         return grid;
     }
 
-    // 6. ЛАБИРИНТ С НЕСКОЛЬКИМИ ВЫХОДАМИ (уровень 6)
     private int[][] generateMazeWithMultipleExits(int[][] grid) {
         System.out.println("=== ГЕНЕРАЦИЯ ЛАБИРИНТА С НЕСКОЛЬКИМИ ВЫХОДАМИ (УРОВЕНЬ 6) ===");
 
         generatePrimMaze(grid);
 
-        // ДОБАВЛЯЕМ ДВЕРИ С КЛЮЧАМИ ДЛЯ УРОВНЯ 6
         addDoorsAndKeysToLevel(grid, 4, 5);
 
-        // Добавляем ложные выходы
         int numFakeExits = 6;
         for (int i = 0; i < numFakeExits; i++) {
             Position pos = findEmptySpace(grid, 4);
             if (pos != null) {
                 grid[pos.getY()][pos.getX()] = 3;
                 System.out.println("Добавлен ложный выход на позиции: " + pos);
-                // Создаем тупиковый путь к ложному выходу
                 createDeadEnd(grid, pos.getX(), pos.getY(), 2);
             }
         }
 
-        // Добавляем несколько ловушек
         int numTraps = 4;
         for (int i = 0; i < numTraps; i++) {
             Position pos = findEmptySpace(grid, 3);
@@ -353,7 +317,6 @@ public class MazeGenerator implements Serializable {
         return grid;
     }
 
-    // 7. СЛУЧАЙНОЕ БЛУЖДАНИЕ (уровень 7)
     private int[][] generateRandomWalkMaze(int[][] grid) {
         System.out.println("=== ГЕНЕРАЦИЯ ЛАБИРИНТА СЛУЧАЙНОГО БЛУЖДАНИЯ (УРОВЕНЬ 7) ===");
 
@@ -365,7 +328,6 @@ public class MazeGenerator implements Serializable {
             int y = 2 + random.nextInt(height - 4);
 
             for (int s = 0; s < stepsPerWalker; s++) {
-                // Очищаем текущую клетку и вокруг
                 for (int dy = -1; dy <= 1; dy++) {
                     for (int dx = -1; dx <= 1; dx++) {
                         int nx = x + dx;
@@ -376,7 +338,6 @@ public class MazeGenerator implements Serializable {
                     }
                 }
 
-                // Двигаемся в случайном направлении
                 int[][] directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
                 int dir = random.nextInt(4);
                 int attempts = 0;
@@ -394,7 +355,6 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // Заполняем мелкие пустоты
         for (int y = 1; y < height - 1; y++) {
             for (int x = 1; x < width - 1; x++) {
                 if (grid[y][x] == 1) {
@@ -413,10 +373,8 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // ДОБАВЛЯЕМ ДВЕРИ С КЛЮЧАМИ ДЛЯ УРОВНЯ 7
         addDoorsAndKeysToLevel(grid, 3, 4);
 
-        // Добавляем телепорты, ловушки и дополнительные ключи
         int numSpecial = 6;
         for (int i = 0; i < numSpecial; i++) {
             Position pos = findEmptySpace(grid, 3);
@@ -424,19 +382,19 @@ public class MazeGenerator implements Serializable {
                 int type = random.nextInt(4);
                 switch (type) {
                     case 0:
-                        grid[pos.getY()][pos.getX()] = 2; // Телепорт
+                        grid[pos.getY()][pos.getX()] = 2;
                         System.out.println("Добавлен телепорт на позиции: " + pos);
                         break;
                     case 1:
-                        grid[pos.getY()][pos.getX()] = 5; // Ключ
+                        grid[pos.getY()][pos.getX()] = 5;
                         System.out.println("Добавлен ключ на позиции: " + pos);
                         break;
                     case 2:
-                        grid[pos.getY()][pos.getX()] = 6; // Ловушка
+                        grid[pos.getY()][pos.getX()] = 6;
                         System.out.println("Добавлена ловушка на позиции: " + pos);
                         break;
                     case 3:
-                        grid[pos.getY()][pos.getX()] = 4; // Дополнительная дверь
+                        grid[pos.getY()][pos.getX()] = 4;
                         System.out.println("Добавлена дополнительная дверь на позиции: " + pos);
                         break;
                 }
@@ -447,18 +405,15 @@ public class MazeGenerator implements Serializable {
         return grid;
     }
 
-    // 8. РЕКУРСИВНОЕ ДЕЛЕНИЕ (уровень 8)
     private int[][] generateRecursiveDivisionMaze(int[][] grid) {
         System.out.println("=== ГЕНЕРАЦИЯ РЕКУРСИВНОГО ЛАБИРИНТА ДЛЯ УРОВНЯ 8 ===");
 
-        // Сначала делаем все проходимым
         for (int y = 1; y < height - 1; y++) {
             for (int x = 1; x < width - 1; x++) {
                 grid[y][x] = 0;
             }
         }
 
-        // Внешние стены
         for (int x = 0; x < width; x++) {
             grid[0][x] = 1;
             grid[height-1][x] = 1;
@@ -468,16 +423,12 @@ public class MazeGenerator implements Serializable {
             grid[y][width-1] = 1;
         }
 
-        // Упрощенное рекурсивное деление
         recursiveDivideSimple(grid, 2, width - 3, 2, height - 3);
 
-        // ГАРАНТИРУЕМ связность
         ensureConnectivity(grid);
 
-        // ДОБАВЛЯЕМ ДВЕРИ С КЛЮЧАМИ ДЛЯ УРОВНЯ 8
         addDoorsAndKeysToLevel(grid, 4, 5);
 
-        // Добавляем специальные элементы на уровень 8
         addSpecialElementsForLevel8(grid);
 
         System.out.println("=== РЕКУРСИВНЫЙ ЛАБИРИНТ СОЗДАН ===");
@@ -485,46 +436,39 @@ public class MazeGenerator implements Serializable {
     }
 
     private void addSpecialElementsForLevel8(int[][] grid) {
-        // Добавляем ловушки
         int numTraps = 4;
         for (int i = 0; i < numTraps; i++) {
             Position pos = findEmptySpace(grid, 4);
             if (pos != null) {
-                grid[pos.getY()][pos.getX()] = 6; // Ловушка
+                grid[pos.getY()][pos.getX()] = 6;
                 System.out.println("Добавлена ловушка на позиции: " + pos);
             }
         }
 
-        // Добавляем телепорты
         int numTeleports = 3;
         for (int i = 0; i < numTeleports; i++) {
             Position pos = findEmptySpace(grid, 5);
             if (pos != null) {
-                grid[pos.getY()][pos.getX()] = 2; // Телепорт
+                grid[pos.getY()][pos.getX()] = 2;
                 System.out.println("Добавлен телепорт на позиции: " + pos);
             }
         }
     }
 
     private void recursiveDivideSimple(int[][] grid, int left, int right, int top, int bottom) {
-        // Если область слишком мала, прекращаем
         if (right - left < 4 || bottom - top < 4) {
             return;
         }
 
-        // Выбираем ориентацию стены
         boolean horizontal = (bottom - top) > (right - left) ? true :
                 (right - left) > (bottom - top) ? false :
                         random.nextBoolean();
 
         if (horizontal) {
-            // Горизонтальная стена
             int wallY = top + 2 + random.nextInt((bottom - top - 3) / 2) * 2;
 
-            // Проход в стене
             int passageX = left + 1 + random.nextInt((right - left - 1) / 2) * 2;
 
-            // Строим стену
             for (int x = left; x <= right; x++) {
                 if (x != passageX) {
                     if (wallY >= top && wallY <= bottom) {
@@ -533,18 +477,14 @@ public class MazeGenerator implements Serializable {
                 }
             }
 
-            // Рекурсивно делим
             recursiveDivideSimple(grid, left, right, top, wallY - 1);
             recursiveDivideSimple(grid, left, right, wallY + 1, bottom);
 
         } else {
-            // Вертикальная стена
             int wallX = left + 2 + random.nextInt((right - left - 3) / 2) * 2;
 
-            // Проход в стене
             int passageY = top + 1 + random.nextInt((bottom - top - 1) / 2) * 2;
 
-            // Строим стену
             for (int y = top; y <= bottom; y++) {
                 if (y != passageY) {
                     if (wallX >= left && wallX <= right) {
@@ -553,71 +493,59 @@ public class MazeGenerator implements Serializable {
                 }
             }
 
-            // Рекурсивно делим
             recursiveDivideSimple(grid, left, wallX - 1, top, bottom);
             recursiveDivideSimple(grid, wallX + 1, right, top, bottom);
         }
     }
 
-    // 9. ЛАБИРИНТ С КЛЮЧАМИ И ДВЕРЯМИ (уровень 9) - ОСНОВНОЙ УРОВЕНЬ ДЛЯ ДВЕРЕЙ
     private int[][] generateKeyAndDoorMaze(int[][] grid) {
         System.out.println("=== ГЕНЕРАЦИЯ ЛАБИРИНТА С КЛЮЧАМИ И ДВЕРЯМИ (УРОВЕНЬ 9) ===");
 
         generatePrimMaze(grid);
 
-        // ГАРАНТИРУЕМ добавление 5 дверей с ключами
         int numDoors = 5;
 
         for (int i = 0; i < numDoors; i++) {
-            // Сначала ищем позицию для двери
             Position doorPos = findEmptySpace(grid, 5);
             if (doorPos != null) {
-                // Размещаем дверь
-                grid[doorPos.getY()][doorPos.getX()] = 4; // Дверь
+                grid[doorPos.getY()][doorPos.getX()] = 4;
                 System.out.println("Добавлена дверь " + (i+1) + " на позиции: " + doorPos);
 
-                // Теперь ищем позицию для ключа (подальше от двери)
                 Position keyPos = findEmptySpace(grid, 8);
                 if (keyPos != null) {
-                    // Размещаем ключ
-                    grid[keyPos.getY()][keyPos.getX()] = 5; // Ключ
+                    grid[keyPos.getY()][keyPos.getX()] = 5;
                     System.out.println("Добавлен ключ для двери " + (i+1) + " на позиции: " + keyPos);
 
-                    // ГАРАНТИРУЕМ путь от ключа к двери
                     createGuaranteedPath(grid, keyPos.getX(), keyPos.getY(), doorPos.getX(), doorPos.getY());
                     System.out.println("Создан гарантированный путь от ключа к двери " + (i+1));
                 }
             }
         }
 
-        // Добавляем дополнительные двери без гарантированных ключей (для сложности)
         int numExtraDoors = 2;
         for (int i = 0; i < numExtraDoors; i++) {
             Position doorPos = findEmptySpace(grid, 6);
             if (doorPos != null) {
-                grid[doorPos.getY()][doorPos.getX()] = 4; // Дверь
+                grid[doorPos.getY()][doorPos.getX()] = 4;
                 System.out.println("Добавлена дополнительная дверь на позиции: " + doorPos);
-                // Создаем тупиковый путь к этой двери
                 createDeadEnd(grid, doorPos.getX(), doorPos.getY(), 3);
             }
         }
 
-        // Добавляем ловушки
         int numTraps = 6;
         for (int i = 0; i < numTraps; i++) {
             Position pos = findEmptySpace(grid, 4);
             if (pos != null) {
-                grid[pos.getY()][pos.getX()] = 6; // Ловушка
+                grid[pos.getY()][pos.getX()] = 6;
                 System.out.println("Добавлена ловушка на позиции: " + pos);
             }
         }
 
-        // Добавляем несколько телепортов
         int numTeleports = 3;
         for (int i = 0; i < numTeleports; i++) {
             Position pos = findEmptySpace(grid, 5);
             if (pos != null) {
-                grid[pos.getY()][pos.getX()] = 2; // Телепорт
+                grid[pos.getY()][pos.getX()] = 2;
                 System.out.println("Добавлен телепорт на позиции: " + pos);
             }
         }
@@ -626,59 +554,53 @@ public class MazeGenerator implements Serializable {
         return grid;
     }
 
-    // 10. ФИНАЛЬНЫЙ БОСС-ЛАБИРИНТ (уровень 10)
     private int[][] generateFinalBossMaze(int[][] grid) {
         System.out.println("=== ГЕНЕРАЦИЯ ФИНАЛЬНОГО БОСС-ЛАБИРИНТА (УРОВЕНЬ 10) ===");
 
         generatePrimMaze(grid);
 
-        // ГАРАНТИРУЕМ добавление 6 дверей с ключами
         int numDoors = 6;
 
         for (int i = 0; i < numDoors; i++) {
             Position doorPos = findEmptySpace(grid, 6);
             if (doorPos != null) {
-                grid[doorPos.getY()][doorPos.getX()] = 4; // Дверь
+                grid[doorPos.getY()][doorPos.getX()] = 4;
                 System.out.println("Добавлена дверь " + (i+1) + " на позиции: " + doorPos);
 
                 Position keyPos = findEmptySpace(grid, 8);
                 if (keyPos != null) {
-                    grid[keyPos.getY()][keyPos.getX()] = 5; // Ключ
+                    grid[keyPos.getY()][keyPos.getX()] = 5;
                     System.out.println("Добавлен ключ для двери " + (i+1) + " на позиции: " + keyPos);
 
-                    // ГАРАНТИРУЕМ путь от ключа к двери
                     createGuaranteedPath(grid, keyPos.getX(), keyPos.getY(), doorPos.getX(), doorPos.getY());
                     System.out.println("Создан гарантированный путь от ключа к двери " + (i+1));
                 }
             }
         }
 
-        // Добавляем телепорты
         int numTeleports = 8;
         for (int i = 0; i < numTeleports; i++) {
             Position pos = findEmptySpace(grid, 3);
             if (pos != null) {
-                grid[pos.getY()][pos.getX()] = 2; // Телепорт
+                grid[pos.getY()][pos.getX()] = 2;
                 System.out.println("Добавлен телепорт на позиции: " + pos);
             }
         }
 
-        // Добавляем ловушки
         int numTraps = 10;
         for (int i = 0; i < numTraps; i++) {
             Position pos = findEmptySpace(grid, 3);
             if (pos != null) {
-                grid[pos.getY()][pos.getX()] = 6; // Ловушка
+                grid[pos.getY()][pos.getX()] = 6;
                 System.out.println("Добавлена ловушка на позиции: " + pos);
             }
         }
 
-        // Добавляем ложные выходы
         int numFakeExits = 4;
         for (int i = 0; i < numFakeExits; i++) {
             Position pos = findEmptySpace(grid, 4);
             if (pos != null) {
-                grid[pos.getY()][pos.getX()] = 3; // Ложный выход
+                grid[pos.getY()][pos.getX()] = 3;
                 System.out.println("Добавлен ложный выход на позиции: " + pos);
                 createDeadEnd(grid, pos.getX(), pos.getY(), 3);
             }
@@ -688,24 +610,21 @@ public class MazeGenerator implements Serializable {
         return grid;
     }
 
-    // НОВЫЙ МЕТОД: ДОБАВЛЕНИЕ ДВЕРЕЙ И КЛЮЧЕЙ ДЛЯ УРОВНЯ
     private void addDoorsAndKeysToLevel(int[][] grid, int numDoors, int numKeys) {
         System.out.println("Добавляю двери и ключи для уровня: " + level);
 
-        // Добавляем двери
         for (int i = 0; i < numDoors; i++) {
             Position doorPos = findEmptySpace(grid, 5);
             if (doorPos != null) {
-                grid[doorPos.getY()][doorPos.getX()] = 4; // Дверь
+                grid[doorPos.getY()][doorPos.getX()] = 4;
                 System.out.println("Добавлена дверь " + (i+1) + " на позиции: " + doorPos);
             }
         }
 
-        // Добавляем ключи (больше чем дверей, чтобы было проще)
         for (int i = 0; i < numKeys; i++) {
             Position keyPos = findEmptySpace(grid, 4);
             if (keyPos != null) {
-                grid[keyPos.getY()][keyPos.getX()] = 5; // Ключ
+                grid[keyPos.getY()][keyPos.getX()] = 5;
                 System.out.println("Добавлен ключ " + (i+1) + " на позиции: " + keyPos);
             }
         }
@@ -713,7 +632,6 @@ public class MazeGenerator implements Serializable {
         System.out.println("Добавлено " + numDoors + " дверей и " + numKeys + " ключей");
     }
 
-    // =========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===========
 
     private int[][] generatePrimMaze(int[][] grid) {
         boolean[][] inMaze = new boolean[height][width];
@@ -820,20 +738,17 @@ public class MazeGenerator implements Serializable {
         }
     }
 
-    // НОВЫЙ УЛУЧШЕННЫЙ МЕТОД ДЛЯ СОЗДАНИЯ ПУТИ
     private void createGuaranteedPath(int[][] grid, int x1, int y1, int x2, int y2) {
         int currentX = x1;
         int currentY = y1;
 
-        // Сначала идем по горизонтали
         int stepX = (x1 < x2) ? 1 : -1;
         while (currentX != x2) {
             currentX += stepX;
 
             if (isValid(currentX, currentY)) {
-                grid[currentY][currentX] = 0; // Проходимая клетка
+                grid[currentY][currentX] = 0;
 
-                // Делаем коридор шире
                 for (int dy = -1; dy <= 1; dy++) {
                     for (int dx = -1; dx <= 1; dx++) {
                         int nx = currentX + dx;
@@ -846,15 +761,13 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // Затем по вертикали
         int stepY = (y1 < y2) ? 1 : -1;
         while (currentY != y2) {
             currentY += stepY;
 
             if (isValid(currentX, currentY)) {
-                grid[currentY][currentX] = 0; // Проходимая клетка
+                grid[currentY][currentX] = 0;
 
-                // Делаем коридор шире
                 for (int dy = -1; dy <= 1; dy++) {
                     for (int dx = -1; dx <= 1; dx++) {
                         int nx = currentX + dx;
@@ -869,14 +782,11 @@ public class MazeGenerator implements Serializable {
     }
 
     private Position findEmptySpace(int[][] grid, int minDistance) {
-        // Список приоритетных позиций для дверей и ключей
         List<Position> priorityPositions = new ArrayList<>();
 
-        // Сначала ищем позиции в коридорах (рядом со стенами)
         for (int y = 1; y < height - 1; y++) {
             for (int x = 1; x < width - 1; x++) {
                 if (grid[y][x] == 0) {
-                    // Проверяем, есть ли рядом стены - это хорошее место для двери
                     boolean nearWall = false;
                     int[][] dirs = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
                     for (int[] dir : dirs) {
@@ -895,12 +805,10 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // Если нашли приоритетные позиции, выбираем случайную
         if (!priorityPositions.isEmpty()) {
             Collections.shuffle(priorityPositions, random);
             Position pos = priorityPositions.get(0);
 
-            // Проверяем, что вокруг достаточно свободного пространства
             boolean clear = true;
             for (int dy = -minDistance; dy <= minDistance && clear; dy++) {
                 for (int dx = -minDistance; dx <= minDistance && clear; dx++) {
@@ -920,7 +828,6 @@ public class MazeGenerator implements Serializable {
             }
         }
 
-        // Если не нашли приоритетных, ищем любую свободную клетку
         int attempts = 0;
         while (attempts < 200) {
             int x = minDistance + random.nextInt(width - 2 * minDistance);
@@ -948,7 +855,6 @@ public class MazeGenerator implements Serializable {
             attempts++;
         }
 
-        // В крайнем случае возвращаем первую свободную клетку
         for (int y = minDistance; y < height - minDistance; y++) {
             for (int x = minDistance; x < width - minDistance; x++) {
                 if (grid[y][x] == 0) {
