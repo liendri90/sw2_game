@@ -30,7 +30,6 @@ public class GameServer {
     private String roomDescription;
     private long roomTotalTime;
     private int levelsCompleted;
-    private long levelStartTime;
     private boolean roomActive = false;
     private boolean gameCompleted = false;
 
@@ -59,7 +58,6 @@ public class GameServer {
         this.gameState = new GameState();
         this.roomTotalTime = 0;
         this.levelsCompleted = 0;
-        this.levelStartTime = 0;
         this.roomActive = true;
         this.gameCompleted = false;
 
@@ -115,9 +113,9 @@ public class GameServer {
                 for (ClientHandler client : clients.values()) {
                     if (client.connected) {
                         try {
-                            client.output.writeObject(stateMessage);
+                            byte[] data = Protocol.serializeMessage(stateMessage);
+                            client.output.write(data);
                             client.output.flush();
-                            client.output.reset();
                         } catch (IOException e) {
                             System.err.println("Ошибка отправки состояния клиенту " +
                                     client.playerName + ": " + e.getMessage());
@@ -137,26 +135,40 @@ public class GameServer {
     }
 
     private synchronized void broadcast(Message message, String excludeSender) {
-        for (ClientHandler client : clients.values()) {
-            if (excludeSender == null || !client.playerName.equals(excludeSender)) {
+        try {
+            byte[] data = Protocol.serializeMessage(message);
+
+            for (ClientHandler client : clients.values()) {
+                if (excludeSender == null || !client.playerName.equals(excludeSender)) {
+                    try {
+                        client.output.write(data);
+                        client.output.flush();
+                    } catch (Exception e) {
+                        System.err.println("Ошибка при отправке сообщения клиенту " +
+                                client.playerName + ": " + e.getMessage());
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Ошибка сериализации сообщения для broadcast: " + e.getMessage());
+        }
+    }
+
+    private synchronized void broadcastToAll(Message message) {
+        try {
+            byte[] data = Protocol.serializeMessage(message);
+
+            for (ClientHandler client : clients.values()) {
                 try {
-                    client.sendMessage(message);
+                    client.output.write(data);
+                    client.output.flush();
                 } catch (Exception e) {
                     System.err.println("Ошибка при отправке сообщения клиенту " +
                             client.playerName + ": " + e.getMessage());
                 }
             }
-        }
-    }
-
-    private synchronized void broadcastToAll(Message message) {
-        for (ClientHandler client : clients.values()) {
-            try {
-                client.sendMessage(message);
-            } catch (Exception e) {
-                System.err.println("Ошибка при отправке сообщения клиенту " +
-                        client.playerName + ": " + e.getMessage());
-            }
+        } catch (IOException e) {
+            System.err.println("Ошибка сериализации сообщения для broadcastToAll: " + e.getMessage());
         }
     }
 
@@ -174,10 +186,25 @@ public class GameServer {
 
         System.out.println("Переход с уровня " + oldLevel + " на уровень " + newLevel);
 
-        broadcastToAll(new Message(MessageType.NEW_LEVEL,
-                "SERVER",
-                "Уровень " + newLevel + " - " + gameState.getMaze().getMazeType(),
-                gameState.createCopy()));
+        try {
+            Message newLevelMessage = new Message(MessageType.NEW_LEVEL,
+                    "SERVER",
+                    "Уровень " + newLevel + " - " + gameState.getMaze().getMazeType(),
+                    gameState.createCopy());
+
+            byte[] messageData = Protocol.serializeMessage(newLevelMessage);
+
+            for (ClientHandler client : clients.values()) {
+                try {
+                    client.output.write(messageData);
+                    client.output.flush();
+                } catch (IOException e) {
+                    System.err.println("Ошибка отправки NEW_LEVEL клиенту " + client.playerName);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Ошибка сериализации NEW_LEVEL сообщения: " + e.getMessage());
+        }
 
         try {
             Thread.sleep(100);
@@ -205,14 +232,27 @@ public class GameServer {
                         if (allConnected && !gameState.isGameStarted()) {
                             System.out.println("Автоматический старт уровня " + newLevel);
                             gameState.startGame();
-                            levelStartTime = System.currentTimeMillis();
-
                             sendGuaranteedGameState();
 
-                            broadcastToAll(new Message(MessageType.GAME_STARTED,
-                                    "SERVER",
-                                    "Уровень " + newLevel + " начался! Идите к выходу!",
-                                    gameState.createCopy()));
+                            try {
+                                Message gameStartedMsg = new Message(MessageType.GAME_STARTED,
+                                        "SERVER",
+                                        "Уровень " + newLevel + " начался! Идите к выходу!",
+                                        gameState.createCopy());
+
+                                byte[] startedData = Protocol.serializeMessage(gameStartedMsg);
+
+                                for (ClientHandler client : clients.values()) {
+                                    try {
+                                        client.output.write(startedData);
+                                        client.output.flush();
+                                    } catch (IOException e) {
+                                        System.err.println("Ошибка отправки GAME_STARTED клиенту " + client.playerName);
+                                    }
+                                }
+                            } catch (IOException e) {
+                                System.err.println("Ошибка сериализации GAME_STARTED сообщения: " + e.getMessage());
+                            }
                         }
                     }
                 }
@@ -258,8 +298,8 @@ public class GameServer {
 
     private class ClientHandler implements Runnable {
         private Socket socket;
-        private ObjectOutputStream output;
-        private ObjectInputStream input;
+        private OutputStream output;
+        private InputStream input;
         private String playerName;
         private boolean connected;
 
@@ -271,10 +311,20 @@ public class GameServer {
         @Override
         public void run() {
             try {
-                output = new ObjectOutputStream(socket.getOutputStream());
-                input = new ObjectInputStream(socket.getInputStream());
+                output = socket.getOutputStream();
+                input = socket.getInputStream();
 
-                Message joinMessage = (Message) input.readObject();
+                byte[] buffer = new byte[65536];
+                int bytesRead = input.read(buffer);
+
+                if (bytesRead <= 0) {
+                    disconnect();
+                    return;
+                }
+
+                byte[] messageData = new byte[bytesRead];
+                System.arraycopy(buffer, 0, messageData, 0, bytesRead);
+                Message joinMessage = Protocol.deserializeMessage(messageData);
 
                 if (joinMessage.getType() == MessageType.CREATE_ROOM) {
                     String roomName = joinMessage.getData();
@@ -288,6 +338,7 @@ public class GameServer {
                     }
                     return;
                 }
+
                 if (joinMessage.getType() == MessageType.PLAYER_JOIN) {
                     playerName = joinMessage.getSender();
 
@@ -357,7 +408,14 @@ public class GameServer {
 
                 while (connected && !gameCompleted) {
                     try {
-                        Message message = (Message) input.readObject();
+                        bytesRead = input.read(buffer);
+                        if (bytesRead <= 0) {
+                            break;
+                        }
+
+                        messageData = new byte[bytesRead];
+                        System.arraycopy(buffer, 0, messageData, 0, bytesRead);
+                        Message message = Protocol.deserializeMessage(messageData);
                         processMessage(message);
                     } catch (EOFException e) {
                         break;
@@ -571,11 +629,18 @@ public class GameServer {
 
             System.out.println("Уровень " + gameState.getCurrentLevel() + " пройден!");
 
-            long levelTime = System.currentTimeMillis() - levelStartTime;
+            long levelTime = 0;
+            if (gameState.isGameFinished() && gameState.getLevelFinishTime() > 0) {
+                levelTime = gameState.getLevelTimeElapsed();
+                System.out.println("Время уровня (зафиксировано): " + levelTime + "мс");
+            } else {
+                levelTime = gameState.getLevelTimeElapsed();
+                System.out.println("Время уровня (текущее): " + levelTime + "мс");
+            }
+
             roomTotalTime += levelTime;
             levelsCompleted = gameState.getCurrentLevel();
 
-            System.out.println("Время уровня: " + levelTime + "мс");
             System.out.println("Общее время комнаты: " + roomTotalTime + "мс");
 
             for (Player player : gameState.getPlayers()) {
@@ -638,7 +703,6 @@ public class GameServer {
                     if (allReady && !gameState.isGameStarted() && !gameCompleted) {
                         System.out.println("Все игроки готовы! Запуск игры");
                         gameState.startGame();
-                        levelStartTime = System.currentTimeMillis();
 
                         sendGuaranteedGameState();
 
@@ -654,7 +718,8 @@ public class GameServer {
         public void sendMessage(Message message) {
             try {
                 if (connected && output != null) {
-                    output.writeObject(message);
+                    byte[] data = Protocol.serializeMessage(message);
+                    output.write(data);
                     output.flush();
                 }
             } catch (IOException e) {

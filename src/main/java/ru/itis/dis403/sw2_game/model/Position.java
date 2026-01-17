@@ -3,6 +3,7 @@ package ru.itis.dis403.sw2_game.model;
 import java.io.Serializable;
 
 public class Position implements Serializable {
+    private static final long serialVersionUID = 1L;
     private int x;
     private int y;
 

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameState implements Serializable {
+    private static final long serialVersionUID = 1L;
     private Maze maze;
     private List<Player> players;
     private boolean gameStarted;
@@ -13,6 +14,8 @@ public class GameState implements Serializable {
     private int currentLevel;
     private int maxLevels = 10;
     private boolean allLevelsCompleted = false;
+    private long levelFinishTime;
+
 
     public GameState() {
         this.players = new ArrayList<>();
@@ -66,17 +69,32 @@ public class GameState implements Serializable {
         System.out.println("Игроков: " + players.size());
     }
 
+    public long getLevelTimeElapsed() {
+        if (!gameStarted) {
+            return 0;
+        }
+
+        if (gameFinished && levelFinishTime > 0) {
+            return levelFinishTime - gameStartTime;
+        }
+
+        return System.currentTimeMillis() - gameStartTime;
+    }
+
     public void checkWinCondition() {
         boolean allAtExit = players.stream().allMatch(Player::isAtExit);
         if (allAtExit && !gameFinished) {
             gameFinished = true;
-            long finishTime = System.currentTimeMillis();
+            levelFinishTime = System.currentTimeMillis();
+
+            long levelTime = levelFinishTime - gameStartTime;
+
             for (Player player : players) {
-                player.setFinishTime(finishTime);
+                player.setFinishTime(levelFinishTime);
             }
 
             System.out.println("=== УРОВЕНЬ " + currentLevel + " ПРОЙДЕН ===");
-            System.out.println("Время: " + (finishTime - gameStartTime) + "мс");
+            System.out.println("Время уровня: " + levelTime + "мс");
 
             if (currentLevel >= maxLevels) {
                 allLevelsCompleted = true;
@@ -93,6 +111,7 @@ public class GameState implements Serializable {
             gameStarted = false;
             gameFinished = false;
             gameStartTime = 0;
+            levelFinishTime = 0;
 
             for (Player player : players) {
                 player.setAtExit(false);
@@ -121,6 +140,10 @@ public class GameState implements Serializable {
             allLevelsCompleted = true;
             System.out.println("=== ИГРА ПРОЙДЕНА! ===");
         }
+    }
+
+    public long getLevelFinishTime() {
+        return levelFinishTime;
     }
 
     public GameState createCopy() {

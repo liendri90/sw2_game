@@ -1,6 +1,5 @@
 package ru.itis.dis403.sw2_game.network;
 
-
 import ru.itis.dis403.sw2_game.model.GameState;
 
 import java.io.*;
@@ -10,8 +9,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class GameClient {
     private Socket socket;
-    private ObjectOutputStream output;
-    private ObjectInputStream input;
+    private OutputStream output;
+    private InputStream input;
     private String playerName;
     private boolean connected;
     private Thread receiveThread;
@@ -20,8 +19,8 @@ public class GameClient {
 
     public GameClient(String serverAddress, int port, String playerName) throws IOException {
         this.socket = new Socket(serverAddress, port);
-        this.output = new ObjectOutputStream(socket.getOutputStream());
-        this.input = new ObjectInputStream(socket.getInputStream());
+        this.output = socket.getOutputStream();
+        this.input = socket.getInputStream();
         this.playerName = playerName;
         this.connected = true;
         this.messageQueue = new LinkedBlockingQueue<>();
@@ -32,11 +31,21 @@ public class GameClient {
 
     public void startListening() {
         receiveThread = new Thread(() -> {
+            byte[] buffer = new byte[65536];
+
             while (connected) {
                 try {
-                    Message message = (Message) input.readObject();
-                    processIncomingMessage(message);
-                    messageQueue.put(message);
+                    int bytesRead = input.read(buffer);
+                    if (bytesRead > 0) {
+                        byte[] messageData = new byte[bytesRead];
+                        System.arraycopy(buffer, 0, messageData, 0, bytesRead);
+                        Message message = Protocol.deserializeMessage(messageData);
+                        processIncomingMessage(message);
+                        messageQueue.put(message);
+                    } else if (bytesRead == -1) {
+                        disconnect();
+                        break;
+                    }
                 } catch (IOException e) {
                     if (connected) {
                         System.err.println("Ошибка при чтении сообщения: " + e.getMessage());
@@ -76,7 +85,8 @@ public class GameClient {
     public void sendMessage(Message message) {
         if (connected) {
             try {
-                output.writeObject(message);
+                byte[] data = Protocol.serializeMessage(message);
+                output.write(data);
                 output.flush();
             } catch (IOException e) {
                 System.err.println("Ошибка при отправке сообщения: " + e.getMessage());

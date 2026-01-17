@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.io.Serializable;
 
 public class Player implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String name;
     private Position position;
     private Color color;
@@ -62,10 +63,13 @@ public class Player implements Serializable {
         this.trapActive = false;
     }
 
-    public long getTimeElapsed() {
+
+    public long getLevelTimeElapsed() {
         if (startTime == 0) return 0;
-        if (finishTime == 0) return System.currentTimeMillis() - startTime;
-        return finishTime - startTime;
+        if (finishTime > 0) {
+            return finishTime - startTime;
+        }
+        return System.currentTimeMillis() - startTime;
     }
 
     @Override

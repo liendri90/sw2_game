@@ -17,6 +17,5 @@ public enum MessageType {
     ROOM_INFO,
     LEADERBOARD_DATA,
     CREATE_ROOM,
-    ROOM_CREATED,
-    REQUEST_ROOMS
+    ROOM_CREATED
 }

@@ -50,6 +50,7 @@ public class GamePanel extends JFrame {
     private boolean showingFinalResults;
     private Timer nextLevelTimer;
     private boolean gameCompleted = false;
+    private long currentLevelFinalTime = 0;
 
     public GamePanel(GameClient client, DatabaseManager dbManager,
                      String roomName, String roomDescription) {
@@ -264,6 +265,12 @@ public class GamePanel extends JFrame {
 
         if (message.getPayload() instanceof GameState) {
             GameState newState = (GameState) message.getPayload();
+
+            if (message.getType() == MessageType.NEW_LEVEL) {
+                showingLevelResults = false;
+                currentLevelFinalTime = 0;
+            }
+
             updateGameState(newState);
 
             if (message.getType() == MessageType.NEW_LEVEL) {
@@ -296,6 +303,13 @@ public class GamePanel extends JFrame {
 
                     int currentLevel = gameState.getCurrentLevel();
                     levelTimes.put(currentLevel, levelTime);
+                    currentLevelFinalTime = levelTime;
+
+                    SwingUtilities.invokeLater(() -> {
+                        timeLabel.setText(String.format("Время уровня: %s | Общее время: %s",
+                                formatTime(levelTime),
+                                formatTime(roomTotalTime)));
+                    });
 
                     if (currentLevel < 10) {
                         showLevelCompleteDialog(currentLevel, levelTime);
@@ -710,8 +724,15 @@ public class GamePanel extends JFrame {
             }
         }
 
-        long levelTime = gameState.isGameStarted() && !gameState.isGameFinished() ?
-                System.currentTimeMillis() - gameState.getGameStartTime() : 0;
+        long levelTime = 0;
+
+        if (showingLevelResults) {
+            levelTime = currentLevelFinalTime;
+        } else if (gameState.isGameStarted() && !gameState.isGameFinished()) {
+            levelTime = gameState.getLevelTimeElapsed();
+        } else if (gameState.isGameFinished()) {
+            levelTime = gameState.getLevelTimeElapsed();
+        }
 
         timeLabel.setText(String.format("Время уровня: %s | Общее время: %s",
                 formatTime(levelTime),
